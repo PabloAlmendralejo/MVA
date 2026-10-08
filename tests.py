@@ -172,3 +172,20 @@ def test_torch_batch_and_chain_rule():
     for b in range(B):
         _, g = soft_dtw_value_and_grad(x[b].detach().numpy(), y[b].numpy(), gamma)
         assert np.allclose(x.grad[b].numpy(), 3.0 * g / B, atol=1e-10)
+
+
+@pytest.mark.parametrize("gamma", [0.01, 0.1, 1.0])
+@pytest.mark.parametrize("n,m", [(1, 1), (5, 9), (12, 7)])
+def test_antidiagonal_torch_matches_numba(n, m, gamma):
+    from torch_sdtw_diag import SoftDTWLossDiag
+    B = 3
+    x = torch.tensor(rng.normal(size=(B, n, 2)), requires_grad=True)
+    y = torch.tensor(rng.normal(size=(B, m, 2)), requires_grad=True)
+    x2, y2 = x.detach().clone().requires_grad_(True), y.detach().clone().requires_grad_(True)
+    v1 = SoftDTWLoss(gamma, reduction="none")(x, y)
+    v2 = SoftDTWLossDiag(gamma, reduction="none")(x2, y2)
+    assert torch.allclose(v1, v2, rtol=1e-10, atol=1e-10)
+    (v1 * torch.arange(1.0, B + 1)).sum().backward()
+    (v2 * torch.arange(1.0, B + 1)).sum().backward()
+    assert torch.allclose(x.grad, x2.grad, atol=1e-9)
+    assert torch.allclose(y.grad, y2.grad, atol=1e-9)
