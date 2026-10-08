@@ -1,0 +1,38 @@
+\documentclass[11pt]{article}
+
+\usepackage{theme}
+\usepackage{shortcuts}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{multirow}
+\graphicspath{{../figures/}}
+
+% compact layout: the body must fit in 5 pages
+\setlength{\parskip}{3pt}
+\captionsetup{font=small}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\providecommand{\R}{\mathbb{R}}
+\newcommand{\sdtw}{\mathrm{dtw}_\gamma}
+\newcommand{\minop}{\mathrm{min}^\gamma}
+
+\title{Mini-Project (ML for Time Series) -- Soft-DTW: a Differentiable Loss Function for Time-Series -- MVA 2026/2027}
+\author{Pablo Borrego \email{pabloalmendralejo@gmail.com} \\ \todo{second student, if any}}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-1.5em}
+
+\input{sections/1_introduction}
+\input{sections/2_method}
+\input{sections/3_data}
+\input{sections/4_results}
+\input{sections/5_conclusion}
+
+\bibliographystyle{plain}
+\bibliography{bib}
+
+\appendix
+\input{sections/6_appendix}
+
+\end{document}

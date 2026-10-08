@@ -1,3 +1,21 @@
 [Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
 [Parallel(n_jobs=7)]: Done   4 tasks      | elapsed:  2.9min
 [Parallel(n_jobs=7)]: Done  11 tasks      | elapsed: 10.8min
+[Parallel(n_jobs=7)]: Done  18 tasks      | elapsed: 45.2min
+[Parallel(n_jobs=7)]: Done  27 out of  36 | elapsed: 76.6min remaining: 25.5min
+[Parallel(n_jobs=7)]: Done  31 out of  36 | elapsed: 88.5min remaining: 14.3min
+[Parallel(n_jobs=7)]: Done  36 out of  36 | elapsed: 94.5min finished
+method            1-NN DTW       DBA  Euclidean NC  soft-DTW
+dataset                                                     
+ArrowHead         0.767296  0.660377      0.767296  0.698113
+CBF               1.000000  0.959943      0.779685  0.959943
+Coffee            1.000000  1.000000      1.000000  1.000000
+ECG200            0.820000  0.700000      0.746667  0.706667
+ECGFiveDays       0.992459  0.633484      0.917044  0.844646
+GunPoint          0.893333  0.653333      0.713333  0.893333
+ItalyPowerDemand  0.950122  0.840633      0.953771  0.925791
+MedicalImages     0.773893  0.446387      0.419580  0.453380
+Plane             1.000000  0.993711      0.899371  1.000000
+SyntheticControl  0.986667  0.988889      0.948889  0.980000
+Trace             1.000000  0.940000      0.520000  0.993333
+TwoLeadECG        1.000000  0.916380      0.593356  0.903780
