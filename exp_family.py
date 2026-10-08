@@ -71,9 +71,13 @@ def run(name):
 
 
 if __name__ == "__main__":
+    import os
     warnings.filterwarnings("ignore")
-    all_rows = []
-    for name in DATASETS:
-        all_rows += run(name)
-        pd.DataFrame(all_rows).to_csv("results/family.csv", index=False)
-        print(name, "done", flush=True)
+    os.makedirs("results/family_parts", exist_ok=True)
+    for name in DATASETS:  # each dataset is checkpointed; finished ones are skipped
+        part = f"results/family_parts/{name}.csv"
+        if not os.path.exists(part):
+            pd.DataFrame(run(name)).to_csv(part, index=False)
+            print(name, "done", flush=True)
+    pd.concat([pd.read_csv(f"results/family_parts/{d}.csv") for d in DATASETS]).to_csv(
+        "results/family.csv", index=False)

@@ -41,6 +41,18 @@ def split(y, seed):
 
 
 def run(name, seed):
+    """One (dataset, split) job; its rows are checkpointed to results/classification_parts/."""
+    import os
+    part = f"results/classification_parts/{name}_{seed}.csv"
+    if os.path.exists(part):  # already done in a previous (interrupted) run
+        return pd.read_csv(part).to_dict("records")
+    rows = _run(name, seed)
+    os.makedirs(os.path.dirname(part), exist_ok=True)
+    pd.DataFrame(rows).to_csv(part, index=False)
+    return rows
+
+
+def _run(name, seed):
     warnings.filterwarnings("ignore")
     X, y = load_all(name)
     tr, va, te = split(y, seed)

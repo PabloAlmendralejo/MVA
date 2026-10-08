@@ -87,15 +87,21 @@ def run(name):
 
 
 if __name__ == "__main__":
+    import os
     warnings.filterwarnings("ignore")
-    all_rows, examples = [], {}
-    for name in DATASETS:
+    os.makedirs("results/forecast_parts", exist_ok=True)
+    for name in DATASETS:  # each dataset is checkpointed; finished ones are skipped
+        part = f"results/forecast_parts/{name}"
+        if os.path.exists(part + ".csv"):
+            continue
         rows, preds, Tin, Tout = run(name)
-        all_rows += rows
         k = slice(0, 5)  # keep a few test series for the figures
-        examples[f"{name}/input"], examples[f"{name}/truth"] = Tin[k], Tout[k]
-        for m, P in preds.items():
-            examples[f"{name}/{m}"] = P[k]
+        ex = {"input": Tin[k], "truth": Tout[k], **{m: P[k] for m, P in preds.items()}}
+        np.savez(part + ".npz", **ex)
+        pd.DataFrame(rows).to_csv(part + ".csv", index=False)
         print(name, "done", flush=True)
-        pd.DataFrame(all_rows).to_csv("results/forecast.csv", index=False)
+    pd.concat([pd.read_csv(f"results/forecast_parts/{d}.csv") for d in DATASETS]).to_csv(
+        "results/forecast.csv", index=False)
+    examples = {f"{d}/{key}": v for d in DATASETS
+                for key, v in np.load(f"results/forecast_parts/{d}.npz").items()}
     np.savez("results/forecast_examples.npz", **examples)
