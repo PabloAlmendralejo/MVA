@@ -43,7 +43,34 @@ Table~\ref{tab:repro} reproduces the paper's trends closely: small $\gamma$ beat
 Following the paper, data are pooled and split 50/25/25 (3 random stratified splits) and $\gamma$ is selected on validation among 15 log-spaced values in $[10^{-3},10]$. Soft-DTW centroids are at least as accurate as DBA centroids on 83\% of the datasets (paper: 75\%), with mean accuracy $0.86$ vs $0.81$. Two baselines the paper does not report put this in context: Euclidean centroids reach $0.77$, but \textbf{1-NN DTW reaches $0.93$} and is better than soft-DTW centroids on 9 of 12 datasets. Nearest centroids trade accuracy for a much smaller model and faster prediction. Moreover, the selected $\gamma$ is unstable: on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected, i.e.\ there is no reliable default for $\gamma$.
 
 \subsection{Multistep-ahead forecasting (Table 3 of the paper)}
-\todo{results of exp\_forecast: average ranks, Euclidean vs DTW test metrics, qualitative figure (ShapesAll)}
+As in the paper, the first 60\% of each series is the input and the remaining 40\% the target; a one-hidden-layer MLP (256 sigmoid units, Adam, $400$ full-batch epochs, hyper-parameters not given in the paper) is trained with the Euclidean loss or with soft-DTW, from random weights or from the Euclidean-trained network, on 13 datasets.
+
+\begin{table}[h]
+\centering\small
+\caption{Average rank (1 = best) of the five models on test, over 13 datasets; the paper's values (79 datasets) in parentheses.}
+\label{tab:forecast}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccccc}
+\toprule
+Test metric & Init & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
+\midrule
+\multirow{2}{*}{DTW} & random & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & \textbf{2.23} (2.79) & 2.85 (\textbf{1.87}) \\
+& Euclidean & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & \textbf{1.69} (\textbf{1.29}) \\
+\midrule
+\multirow{2}{*}{Euclidean} & random & \textbf{1.31} (\textbf{1.05}) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
+& Euclidean & 2.77 (\textbf{1.70}) & \textbf{1.62} (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:forecast} reproduces the main claim: each loss wins on its own metric, and when initialised from the Euclidean network the ordering in $\gamma$ is the paper's (median test DTW reduced by $19$--$20\%$ for $\gamma\le0.01$). Two differences are informative. First, trained from scratch with $\gamma=0.001$, the network is unstable on some datasets (test DTW $3.2\times$ that of the Euclidean model on Coffee, $2\times$ on Plane), in line with the degenerate alignments reported for soft-DTW training in~\cite{zeitler2023stabilizing}; the Euclidean warm start removes the problem. Second, the price of shift invariance is large in Euclidean terms: the median test Euclidean error of soft-DTW models is $1.5\times$ ($\gamma=0.1$) to $3.4\times$ ($\gamma=0.001$) that of the Euclidean model (Fig.~\ref{fig:forecast}). Fig.~\ref{fig:forecast} shows a more worrying failure: on ShapesAll the soft-DTW network (random init) outputs an almost flat line with isolated spikes at the extreme values, and yet obtains a \emph{lower} test DTW than the Euclidean network ($6.6$ vs $9.3$). Free warping lets a whole target segment be matched to a single predicted point of the right height, so degenerate predictions are cheap under DTW --- both as a training loss and as an evaluation metric. Such timing and shape errors are not penalised by soft-DTW~\cite{leguen2019shape}; controlling them requires a cost on warping, which motivates the next section.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{forecast_examples.png}
+\caption{Test forecasts (last 40\%) from MLPs trained with the Euclidean loss and with soft-DTW ($\gamma=0.01$, random init). On ShapesAll the soft-DTW model degenerates into a flat line with spikes, which DTW scores better than the Euclidean forecast.}
+\label{fig:forecast}
+\end{figure}
 
 \subsection{A family of soft alignment distances}
 \todo{results of exp\_family: 1-NN accuracy of soft-DTW / soft-ADTW / soft-WDTW / soft-ERP, raw vs divergence, vs Euclidean and 1D Wasserstein controls; selected gamma and omega}
