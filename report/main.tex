@@ -74,7 +74,7 @@ e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l
 where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, and can be read directly from the table $R=[r_{i,j}]$ computed in the forward pass, which is therefore kept in memory. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
 
 \paragraph{Learning with soft-DTW.}
-The barycenter of $y_1,\dots,y_N$ solves $\min_{x\in\R^{n\times p}}\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$ (Eq.~4 of the paper), a smooth but non-convex problem that we solve with L-BFGS. $k$-means alternates assignment and barycenter steps under $\sdtw$; the nearest-centroid classifier uses one barycenter per class; and for forecasting $\sdtw$ is the training loss of a network (our PyTorch \texttt{autograd.Function}).
+With this gradient, soft-DTW can be minimised like any differentiable loss. The barycenter (average) of $y_1,\dots,y_N$ is the series closest to all of them, $\min_{x}\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$, which we find with L-BFGS; the problem is non-convex, so only a local minimum is guaranteed. $k$-means and the nearest-centroid classifier are built from such barycenters, and in forecasting soft-DTW is the training loss of a network.
 
 \paragraph{A family of soft alignment distances (our extension).}
 Soft-DTW is one instance of a soft dynamic program on the alignment grid~\cite{mensch2018differentiable}, in which each of the three edges entering cell $(i,j)$ has its own cost:
