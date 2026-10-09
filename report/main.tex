@@ -81,7 +81,7 @@ In the recursion above, the three steps that can enter cell $(i,j)$ all cost the
 \begin{equation}
 r_{i,j}=\minop\{r_{i-1,j-1}+\delta_{i,j},\; r_{i-1,j}+\delta_{i,j}+\omega,\; r_{i,j-1}+\delta_{i,j}+\omega\}.
 \end{equation}
-We call it soft-DTW$_\omega$. The penalty $\omega$ acts as a dial: $\omega=0$ gives soft-DTW and $\omega\to\infty$ forbids warping. Forward and backward passes are unchanged, so the gradient is computed as before. The motivation is that soft-DTW has a built-in preference: for large $\gamma$, $E$ concentrates around the diagonal whatever the data (Fig.~\ref{fig:E}, right), and the penalty is a way to control how much warping is allowed (Fig.~\ref{fig:prior} in the appendix). Finally, smoothing introduces a bias: $\sdtw(x,x)<0$, so a series is not at distance zero from itself; the divergence $D(x,y)=\sdtw(x,y)-\tfrac12\sdtw(x,x)-\tfrac12\sdtw(y,y)$ removes it~\cite{blondel2021differentiable}.
+We call it soft-DTW$_\omega$. Forward and backward passes are unchanged, so the gradient is computed as before. The motivation is that soft-DTW has a built-in preference: for large $\gamma$, $E$ concentrates around the diagonal whatever the data (Fig.~\ref{fig:E}, right), and the penalty is a way to control how much warping is allowed (Fig.~\ref{fig:prior} in the appendix). Finally, smoothing introduces a bias: $\sdtw(x,x)<0$, so a series is not at distance zero from itself; the divergence $D(x,y)=\sdtw(x,y)-\tfrac12\sdtw(x,x)-\tfrac12\sdtw(y,y)$ removes it~\cite{blondel2021differentiable}.
 
 % ======================================================================
 \section{Data}
