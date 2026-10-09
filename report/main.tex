@@ -60,14 +60,14 @@ It is impossible to find the minimum by computing all the alignments, as $|\math
 \begin{equation}
 r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(x,y)=r_{n,m},
 \end{equation}
-in $O(nm)$ time. The whole table $R=[r_{i,j}]$ is stored for the backward pass.
+in $O(nm)$ time.
 
 \paragraph{Gradient (Algorithm 2).}
 By the chain rule, $\nabla_x\sdtw=(\partial\Delta/\partial x)^\top E$ with $E=\partial r_{n,m}/\partial\Delta=\mathbb E_\gamma[A]$, the expected alignment under the Gibbs distribution $p_\gamma(A)\propto e^{-\langle A,\Delta\rangle/\gamma}$: $e_{i,j}$ is the probability that a random path visits cell $(i,j)$. Computing $\mathbb E_\gamma[A]$ directly costs $O(n^2m^2)$; the paper instead back-propagates through the recursion. Since $r_{i,j}$ only influences its three successors,
 \begin{equation}
 e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l}-r_{i,j}-\delta_{k,l})/\gamma\big),\qquad e_{n,m}=1,
 \end{equation}
-where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, read from the stored table at no extra log-sum-exp cost. For the squared Euclidean cost, $\nabla_{x_i}\sdtw=2\sum_j e_{i,j}(x_i-y_j)$: each $x_i$ is pulled towards the $y_j$ it is likely aligned with. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
+where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, and can be read directly from the table $R=[r_{i,j}]$ computed in the forward pass, which is therefore kept in memory ($O(nm)$ instead of $O(n)$ for DTW alone). For the squared Euclidean cost, $\nabla_{x_i}\sdtw=2\sum_j e_{i,j}(x_i-y_j)$: each $x_i$ is pulled towards the $y_j$ it is likely aligned with. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
 
 \paragraph{Learning with soft-DTW.}
 The barycenter of $y_1,\dots,y_N$ solves $\min_{x\in\R^{n\times p}}\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$ (Eq.~4 of the paper), a smooth but non-convex problem that we solve with L-BFGS. $k$-means alternates assignment and barycenter steps under $\sdtw$; the nearest-centroid classifier uses one barycenter per class; and for forecasting $\sdtw$ is the training loss of a network (our PyTorch \texttt{autograd.Function}).
