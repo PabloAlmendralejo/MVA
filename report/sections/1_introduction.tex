@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 \section{Introduction and contributions}
 
 Comparing time series point by point (Euclidean distance) is fragile: two recordings of the same phenomenon are often shifted, locally stretched or of different lengths. Dynamic Time Warping (DTW)~\cite{sakoe1978dynamic} handles this by first finding the cheapest monotone \emph{alignment} between the two series. DTW is however a minimum over alignments, hence not differentiable, and its (sub)gradient jumps whenever the optimal alignment changes. This makes it a poor training loss, and averaging or clustering under DTW has relied on heuristics such as DBA~\cite{petitjean2011global}.

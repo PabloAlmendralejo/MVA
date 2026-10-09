@@ -1,0 +1,43 @@
+{
+    // Python / notebook: use the project's virtual environment
+    "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["tests.py", "tests_softdp.py"],
+
+    // LaTeX Workshop: build report/main.tex with pdflatex -> bibtex -> pdflatex x2
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "pdflatex + bibtex",
+            "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "pdflatex",
+            "command": "pdflatex",
+            "args": ["-synctex=1", "-interaction=nonstopmode", "-file-line-error", "%DOC%"]
+        },
+        {
+            "name": "bibtex",
+            "command": "bibtex",
+            "args": ["%DOCFILE%"]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "pdflatex + bibtex",
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.view.pdf.viewer": "tab",
+    "latex-workshop.latex.autoClean.run": "never",
+
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "report/*.aux": true,
+        "report/*.bbl": true,
+        "report/*.blg": true,
+        "report/*.out": true,
+        "report/*.fls": true,
+        "report/*.fdb_latexmk": true,
+        "report/*.synctex.gz": true,
+        "report/*.xsim": true
+    }
+}
