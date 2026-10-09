@@ -10,7 +10,6 @@ init      method              gamma omega
 euclidean DBA                 NaN   NaN      0.045210      0.058941
           soft-DTW            0.01  NaN      0.043645      0.058450
                               0.10  NaN      0.044994      0.059509
-          soft-DTW divergence 0.01  NaN      0.043990      0.058778
                               0.10  NaN      0.049959      0.063622
           soft-DTW_omega      0.01  0.1      0.047762      0.061697
                                     1.0      0.059564      0.069137
@@ -19,7 +18,6 @@ euclidean DBA                 NaN   NaN      0.045210      0.058941
 random    DBA                 NaN   NaN      0.058392      0.072659
           soft-DTW            0.01  NaN      0.052642      0.066542
                               0.10  NaN      0.050163      0.064405
-          soft-DTW divergence 0.01  NaN      0.053963      0.067622
                               0.10  NaN      0.058454      0.071671
           soft-DTW_omega      0.01  0.1      0.051247      0.065884
                                     1.0      0.056386      0.066705

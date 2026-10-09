@@ -2,7 +2,7 @@
 penalty prevent the degenerate soft-DTW forecasts (flat line + spikes)?
 
 Same data, MLP and training as exp_forecast.py. Training losses: Euclidean,
-soft-DTW, its divergence, and soft-DTW with a warping penalty omega, all with
+soft-DTW and soft-DTW with a warping penalty omega, all with
 gamma = 0.01; random init and init from the Euclidean network.
 Test metrics: Euclidean and hard DTW (as in the paper) plus the timing error of
 the maximum and of the minimum of the forecast (|argmax pred - argmax truth|, in
@@ -24,11 +24,10 @@ from exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
 from torch_sdtw import SoftDTWLoss
 
 GAMMA = 0.01
-LOSSES = {  # label -> (omega, divergence)
-    "soft-DTW": (0.0, False),
-    "soft-DTW divergence": (0.0, True),
-    "soft-DTW_omega 0.1": (0.1, False),
-    "soft-DTW_omega 1": (1.0, False),
+LOSSES = {  # label -> omega
+    "soft-DTW": 0.0,
+    "soft-DTW_omega 0.1": 0.1,
+    "soft-DTW_omega 1": 1.0,
 }
 
 
@@ -54,10 +53,10 @@ def run(name):
     base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
     preds["Euclidean"] = record("Euclidean", "random", base)
     record("Euclidean", "euclidean", base)
-    for label, (omega, div) in LOSSES.items():
+    for label, omega in LOSSES.items():
         for init in ("random", "euclidean"):
             model = mlp(Xin.shape[1], Xout.shape[1]) if init == "random" else copy.deepcopy(base)
-            model = train(model, SoftDTWLoss(GAMMA, omega=omega, divergence=div), Xin, Xout)
+            model = train(model, SoftDTWLoss(GAMMA, omega=omega), Xin, Xout)
             P = record(label, init, model)
             if init == "random":
                 preds[label] = P

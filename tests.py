@@ -131,7 +131,7 @@ def test_alignment_tends_to_dtw_path():
 
 
 def test_self_value_is_not_zero():
-    """Known flaw (motivates the divergence): dtw_gamma(x, x) < 0 for gamma > 0."""
+    """Known property: dtw_gamma(x, x) < 0 for gamma > 0 and n >= 2."""
     x = rng.normal(size=(10, 1))
     assert soft_dtw(x, x, 1.0) < 0
 
@@ -192,18 +192,15 @@ def test_antidiagonal_torch_matches_numba(n, m, gamma):
 
 
 @pytest.mark.parametrize("omega", [0.0, 0.5])
-@pytest.mark.parametrize("divergence", [False, True])
-def test_torch_loss_omega_and_divergence_match_engine(omega, divergence):
-    from softdp import (soft_distance, soft_distance_value_and_grad, soft_divergence,
-                        soft_divergence_value_and_grad)
+def test_torch_loss_omega_matches_engine(omega):
+    from softdp import soft_distance_value_and_grad
     kind, params = ("adtw", {"omega": omega}) if omega > 0 else ("dtw", {})
     B, gamma = 3, 0.3
     X, Y = rng.normal(size=(B, 7, 2)), rng.normal(size=(B, 9, 2))
     x = torch.tensor(X, requires_grad=True)
-    v = SoftDTWLoss(gamma, reduction="none", omega=omega, divergence=divergence)(x, torch.tensor(Y))
+    v = SoftDTWLoss(gamma, reduction="none", omega=omega)(x, torch.tensor(Y))
     v.sum().backward()
     for b in range(B):
-        f = soft_divergence_value_and_grad if divergence else soft_distance_value_and_grad
-        ref_v, ref_g = f(X[b], Y[b], gamma, kind, **params)
+        ref_v, ref_g = soft_distance_value_and_grad(X[b], Y[b], gamma, kind, **params)
         assert v[b].item() == pytest.approx(ref_v, rel=1e-10, abs=1e-10)
         assert np.allclose(x.grad[b].numpy(), ref_g, atol=1e-9)

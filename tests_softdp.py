@@ -4,8 +4,7 @@ import numpy as np
 import pytest
 
 from softdp import (edge_costs, expected_warps, soft_distance,
-                    soft_distance_value_and_grad, soft_divergence,
-                    soft_divergence_value_and_grad, soft_dp, soft_dp_forward)
+                    soft_distance_value_and_grad, soft_dp, soft_dp_forward)
 from softdtw import soft_dtw, soft_dtw_alignment
 
 rng = np.random.default_rng(1)
@@ -79,16 +78,11 @@ def test_adtw_limits():
 
 
 @pytest.mark.parametrize("kind,params", KINDS)
-@pytest.mark.parametrize("divergence", [False, True])
-def test_gradient_finite_differences(kind, params, divergence):
+def test_gradient_finite_differences(kind, params):
     x, y = rng.normal(size=(7, 2)), rng.normal(size=(9, 2))
     gamma = 0.3
-    if divergence:
-        f = lambda z: soft_divergence(z, y, gamma, kind, **params)
-        _, grad = soft_divergence_value_and_grad(x, y, gamma, kind, **params)
-    else:
-        f = lambda z: soft_distance(z, y, gamma, kind, **params)
-        _, grad = soft_distance_value_and_grad(x, y, gamma, kind, **params)
+    f = lambda z: soft_distance(z, y, gamma, kind, **params)
+    _, grad = soft_distance_value_and_grad(x, y, gamma, kind, **params)
     eps, fd = 1e-6, np.zeros_like(x)
     for idx in np.ndindex(*x.shape):
         xp, xm = x.copy(), x.copy()
@@ -106,13 +100,6 @@ def test_omega_derivative_is_expected_warps():
     assert expected_warps(x, y, gamma, omega) == pytest.approx(fd, rel=1e-6)
 
 
-@pytest.mark.parametrize("kind,params", KINDS)
-def test_divergence_is_zero_on_identical_series(kind, params):
-    x = rng.normal(size=(10, 1))
-    assert soft_distance(x, x, 1.0, kind, **params) != pytest.approx(0.0)
-    assert soft_divergence(x, x, 1.0, kind, **params) == pytest.approx(0.0, abs=1e-12)
-
-
 def test_hard_forward_equals_min_over_paths():
     x, y = rng.normal(size=(4, 1)), rng.normal(size=(3, 1))
     for kind, params in KINDS:
@@ -124,12 +111,11 @@ def test_hard_forward_equals_min_over_paths():
 
 
 @pytest.mark.parametrize("kind,params", KINDS)
-@pytest.mark.parametrize("divergence", [False, True])
-def test_barycenter_objective_gradient(kind, params, divergence):
+def test_barycenter_objective_gradient(kind, params):
     from family import family_objective
     Y = [rng.normal(size=(6, 1)), rng.normal(size=(8, 1)), rng.normal(size=(7, 1))]
     z = rng.normal(size=(5, 1))
-    kw = dict(omega=params.get("omega", 0.0), divergence=divergence)
+    kw = dict(omega=params.get("omega", 0.0))
     _, grad = family_objective(z, Y, kind, 0.3, **kw)
     eps, fd = 1e-6, np.zeros_like(z)
     for idx in np.ndindex(*z.shape):

@@ -1,6 +1,6 @@
 """A general soft dynamic program over the alignment grid, and the soft distances
 it yields: soft-DTW and soft-DTW with a warping penalty omega (kind 'adtw', the
-soft counterpart of amerced DTW), plus their debiased "divergence" versions.
+soft counterpart of amerced DTW).
 
 Grid and edges
 --------------
@@ -169,17 +169,3 @@ def expected_warps(x, y, gamma, omega=0.0):
     Cd, Cv, Ch = edge_costs(x, y, "adtw", omega=omega)
     _, (Pd, Pv, Ph) = soft_dp(Cd, Cv, Ch, gamma)
     return Pv.sum() + Ph.sum()
-
-
-def soft_divergence(x, y, gamma, kind="dtw", **params):
-    """D(x, y) = S(x, y) - S(x, x)/2 - S(y, y)/2  (Blondel et al., 2021); D(x, x) = 0."""
-    S = lambda a, b: soft_distance(a, b, gamma, kind, **params)
-    return S(x, y) - 0.5 * S(x, x) - 0.5 * S(y, y)
-
-
-def soft_divergence_value_and_grad(x, y, gamma, kind="dtw", **params):
-    """Gradient wrt x; the distances are symmetric, so grad_x S(x, x) = 2 grad_1 S(x, x)."""
-    vxy, gxy = soft_distance_value_and_grad(x, y, gamma, kind, **params)
-    vxx, gxx = soft_distance_value_and_grad(x, x, gamma, kind, **params)
-    vyy = soft_distance(y, y, gamma, kind, **params)
-    return vxy - 0.5 * vxx - 0.5 * vyy, gxy - gxx

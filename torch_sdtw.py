@@ -63,26 +63,22 @@ class SoftDTWFunction(torch.autograd.Function):
 class SoftDTWLoss(torch.nn.Module):
     """Soft-DTW loss between batches of series (B, n, p) and (B, m, p).
 
-    omega > 0 adds a penalty to every warping step (soft-DTW_omega);
-    divergence=True uses D(x, y) = S(x, y) - S(x, x)/2 - S(y, y)/2.
+    omega > 0 adds a penalty to every warping step (soft-DTW_omega).
     """
 
-    def __init__(self, gamma=1.0, reduction="mean", omega=0.0, divergence=False):
+    def __init__(self, gamma=1.0, reduction="mean", omega=0.0):
         super().__init__()
         if gamma <= 0:
             raise ValueError("gamma must be > 0")
         if reduction not in ("mean", "sum", "none"):
             raise ValueError("reduction must be 'mean', 'sum' or 'none'")
-        self.gamma, self.omega, self.divergence = gamma, omega, divergence
+        self.gamma, self.omega = gamma, omega
         self.reduction = reduction
 
     def forward(self, x, y):
         if x.dim() == 2:  # (B, n) univariate -> (B, n, 1)
             x, y = x.unsqueeze(-1), y.unsqueeze(-1)
-        S = lambda a, b: SoftDTWFunction.apply(a, b, self.gamma, self.omega)
-        values = S(x, y)
-        if self.divergence:
-            values = values - 0.5 * S(x, x) - 0.5 * S(y, y)
+        values = SoftDTWFunction.apply(x, y, self.gamma, self.omega)
         if self.reduction == "mean":
             return values.mean()
         if self.reduction == "sum":
