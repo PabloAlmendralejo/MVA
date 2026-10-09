@@ -81,7 +81,7 @@ Soft-DTW is one instance of a soft dynamic program on the alignment grid~\cite{m
 \begin{equation}
 r_{i,j}=\minop\{r_{i-1,j-1}+c^{\searrow}_{i,j},\; r_{i-1,j}+c^{\downarrow}_{i,j},\; r_{i,j-1}+c^{\rightarrow}_{i,j}\}.
 \end{equation}
-The same backward pass returns the expected usage of every edge, from which the gradient w.r.t.\ $x$ follows by the chain rule. Choosing the edge costs gives: soft-DTW ($c=\delta_{i,j}$ for all edges); \emph{soft-DTW with a warping penalty} (soft-DTW$_\omega$), $c^{\downarrow}=c^{\rightarrow}=\delta_{i,j}+\omega$: every step that stretches time pays a fixed penalty $\omega$ (the soft counterpart of ``amerced'' DTW~\cite{herrmann2023amercing}). For soft-DTW$_\omega$, $\omega=0$ recovers soft-DTW, $\omega\to\infty$ forbids warping (Euclidean distance for equal lengths), and $\partial r_{n,m}/\partial\omega$ is the expected number of warping steps. This matters because the entropic smoothing of soft-DTW carries a data-independent prior: for large $\gamma$, $E$ tends to the uniform average over paths, concentrated around the diagonal whatever the data (Fig.~\ref{fig:E}, right); step costs reshape this prior. Finally, smoothing introduces a bias: $S(x,x)\neq0$ (for soft-DTW, $\sdtw(x,x)<0$), so a series is not at distance zero from itself. Each member $S$ can be debiased into the divergence $D(x,y)=S(x,y)-\tfrac12S(x,x)-\tfrac12S(y,y)$, which vanishes at $x=y$~\cite{blondel2021differentiable}.
+The same backward pass returns the expected usage of every edge, from which the gradient w.r.t.\ $x$ follows by the chain rule. Choosing the edge costs gives: soft-DTW ($c=\delta_{i,j}$ for all edges); \emph{soft-DTW with a warping penalty} (soft-DTW$_\omega$), $c^{\downarrow}=c^{\rightarrow}=\delta_{i,j}+\omega$: every step that stretches time pays a fixed penalty $\omega$ (the soft counterpart of ``amerced'' DTW~\cite{herrmann2023amercing}). For soft-DTW$_\omega$, $\omega=0$ recovers soft-DTW, $\omega\to\infty$ forbids warping (Euclidean distance for equal lengths), and $\partial r_{n,m}/\partial\omega$ is the expected number of warping steps. This matters because the entropic smoothing of soft-DTW carries a data-independent prior: for large $\gamma$, $E$ tends to the uniform average over paths, concentrated around the diagonal whatever the data (Fig.~\ref{fig:E}, right); step costs reshape this prior (Fig.~\ref{fig:prior} in the appendix). Finally, smoothing introduces a bias: $S(x,x)\neq0$ (for soft-DTW, $\sdtw(x,x)<0$), so a series is not at distance zero from itself. Each member $S$ can be debiased into the divergence $D(x,y)=S(x,y)-\tfrac12S(x,x)-\tfrac12S(y,y)$, which vanishes at $x=y$~\cite{blondel2021differentiable}.
 
 % ======================================================================
 \section{Data}
@@ -157,7 +157,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:repro} reproduces the paper's trends closely: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. The paper only reports win rates; magnitudes and costs nuance the picture. \emph{Barycenters:} from a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). \emph{$k$-means:} gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). \emph{Cost:} with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters but losses up to $3\times$ that of DBA: smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size (from a random start it stalls $30\times$ above DBA on Coffee and Trace), which inflates the win rates against it.
+Table~\ref{tab:repro} reproduces the paper's trends closely: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. The paper only reports win rates; magnitudes and costs nuance the picture. \emph{Barycenters:} from a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). \emph{$k$-means:} gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). \emph{Cost:} with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters and centroids, as in the paper's qualitative figures, which we reproduce in the appendix (Figs.~\ref{fig:bary}--\ref{fig:kmeans}: DBA and small $\gamma$ show spurious kinks and absorb the noise), but losses up to $3\times$ that of DBA: smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size (from a random start it stalls $30\times$ above DBA on Coffee and Trace), which inflates the win rates against it.
 
 \subsection{Nearest-centroid classification (Fig.~7 of the paper)}
 Following the paper, data are pooled and split 50/25/25 (3 random stratified splits) and $\gamma$ is selected on validation among 15 log-spaced values in $[10^{-3},10]$. Soft-DTW centroids are at least as accurate as DBA centroids on 83\% of the datasets (paper: 75\%), with mean accuracy $0.86$ vs $0.81$. Two baselines the paper does not report put this in context: Euclidean centroids reach $0.77$, but \textbf{1-NN DTW reaches $0.93$} and is better than soft-DTW centroids on 9 of 12 datasets. Nearest centroids trade accuracy for a much smaller model and faster prediction. Moreover, the selected $\gamma$ is unstable: on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected, i.e.\ there is no reliable default for $\gamma$.
@@ -241,7 +241,33 @@ We re-implemented soft-DTW from scratch, verified it against exhaustive enumerat
 \label{fig:timing}
 \end{figure}
 
-\todo{qualitative figures: barycenters on ECG200 (paper Fig.~5), interpolation on GunPoint (Fig.~4), $k$-means clusters on CBF (Fig.~6), forecasts on ShapesAll (Fig.~1).}
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{barycenters_ECG200.png}
+\caption{Barycenters of 10 ECG200 series (grey) from the same random initialisation (paper's Fig.~5). With $\gamma=1$ the barycenter is smooth and follows the shape of the class; with $\gamma=0.01$, DBA and the subgradient method it shows spurious kinks and flat segments.}
+\label{fig:bary}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\linewidth]{interpolation_GunPoint.png}
+\caption{Weighted barycenters (dashed, weights $0.25,0.5,0.75$) between two GunPoint series (paper's Fig.~4). The Euclidean average blends the two pulses, whereas soft-DTW moves the pulse in time from one series to the other.}
+\label{fig:interp}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{kmeans_CBF.png}
+\caption{$k$-means clusters on CBF (paper's Fig.~6), same random initialisation. Soft-DTW ($\gamma=1$) centroids are smooth; DBA centroids absorb the noise of the series.}
+\label{fig:kmeans}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\linewidth]{prior_zero_cost.png}
+\caption{Expected alignment $E$ between two identical constant series (all costs are zero), i.e.\ the data-independent prior of the soft-minimum over paths. Soft-DTW spreads it over a wide diagonal band; a warping penalty $\omega$ narrows it.}
+\label{fig:prior}
+\end{figure}
 
 
 \end{document}
