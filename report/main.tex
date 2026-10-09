@@ -63,7 +63,11 @@ r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(
 in $O(nm)$ time.
 
 \paragraph{Gradient (Algorithm 2).}
-By the chain rule, $\nabla_x\sdtw=(\partial\Delta/\partial x)^\top E$ with $E=\partial r_{n,m}/\partial\Delta=\mathbb E_\gamma[A]$, the expected alignment under the Gibbs distribution $p_\gamma(A)\propto e^{-\langle A,\Delta\rangle/\gamma}$: $e_{i,j}$ is the probability that a random path visits cell $(i,j)$. Computing $\mathbb E_\gamma[A]$ directly costs $O(n^2m^2)$; the paper instead back-propagates through the recursion. Since $r_{i,j}$ only influences its three successors,
+We want to understand how much $r_{n,m}=\sdtw(x,y)$ changes if we change the series $x$; mathematically, this is expressed by the gradient $\nabla_x\sdtw(x,y)=\partial r_{n,m}/\partial x$. Since $x$ only enters the recursion through the costs $\delta_{i,j}$, and each $\delta_{i,j}$ is added to $r_{i,j}$ only, thanks to the chain rule we get
+\begin{equation}
+\nabla_x\sdtw(x,y)=\sum_{i,j}\frac{\partial r_{n,m}}{\partial \delta_{i,j}}\,\frac{\partial \delta_{i,j}}{\partial x}=\sum_{i,j}e_{i,j}\,\frac{\partial \delta_{i,j}}{\partial x},\qquad e_{i,j}:=\frac{\partial r_{n,m}}{\partial r_{i,j}} .
+\end{equation}
+This means that the gradient can be interpreted in terms of how much $r_{n,m}$ depends on each $r_{i,j}$ (the coefficient $e_{i,j}$) and of how much each cell depends on $x$: since $\delta_{i,j}=\|x_i-y_j\|^2$ only involves the point $x_i$, moving $x_i$ only changes the costs of row $i$ of $\Delta$, with $\partial\delta_{i,j}/\partial x_i=2(x_i-y_j)$. The matrix $E=[e_{i,j}]$ is the expected alignment $\mathbb E_\gamma[A]$ under the Gibbs distribution $p_\gamma(A)\propto e^{-\langle A,\Delta\rangle/\gamma}$: $e_{i,j}$ is the probability that a random path visits cell $(i,j)$. Computing $\mathbb E_\gamma[A]$ directly costs $O(n^2m^2)$; the paper instead back-propagates through the recursion. Since $r_{i,j}$ only influences its three successors,
 \begin{equation}
 e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l}-r_{i,j}-\delta_{k,l})/\gamma\big),\qquad e_{n,m}=1,
 \end{equation}
