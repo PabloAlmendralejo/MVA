@@ -50,11 +50,11 @@ Soft-DTW replaces this minimum by the \emph{soft-minimum} with smoothing paramet
 \begin{equation}
 \minop(a_1,\dots,a_k)=-\gamma\log\sum_{l=1}^{k}e^{-a_l/\gamma}.
 \end{equation}
-It tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Soft-DTW is the soft-minimum of the costs of all alignments:
+Therefore, soft-DTW is the soft-minimum of the costs of all alignments:
 \begin{equation}
 \sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta(x,y)\rangle=-\gamma\log\sum_{A\in\mathcal A_{n,m}}e^{-\langle A,\Delta(x,y)\rangle/\gamma}.
 \end{equation}
-It is therefore smooth (infinitely differentiable) in $\Delta$, hence in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
+The soft-minimum tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Hence $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, and so in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
 
 \paragraph{Forward pass (Algorithm 1).}
 Neither quantity can be computed by listing the alignments: $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach. Both are computed by Bellman's recursion: with $r_{0,0}=0$ and $r_{i,0}=r_{0,j}=+\infty$,
