@@ -2,9 +2,8 @@
 
 The paper uses soft-DTW as a smooth surrogate to minimise the hard DTW barycenter
 loss and compares it with DBA *on that loss*. We apply the same test to every
-member of our family of soft distances: soft-DTW, its debiased divergence,
-soft-DTW with a warping penalty omega (kind 'adtw' in the code), soft weighted
-DTW and soft ERP. All are scored with the hard DTW loss (Eq. 4, gamma = 0):
+variant of soft-DTW we implement: its debiased divergence and soft-DTW with a
+warping penalty omega (kind 'adtw' in the code). All are scored with the hard DTW loss (Eq. 4, gamma = 0):
   * train loss: on the 10 series the barycenter was computed from (as the paper);
   * held-out loss: on up to 20 other series of the same class (detects
     barycenters that fit the idiosyncrasies of the 10 series).
@@ -40,8 +39,6 @@ CONFIGS = [
     ("soft-DTW_omega", "adtw", 0.1, 1.0, False),
     ("soft-DTW_omega", "adtw", 0.01, 0.1, False),
     ("soft-DTW_omega", "adtw", 0.01, 1.0, False),
-    ("soft-WDTW", "wdtw", 0.1, 0.0, False),
-    ("soft-ERP", "erp", 0.1, 0.0, False),
 ]
 
 

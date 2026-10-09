@@ -9,7 +9,7 @@ from softdp import (edge_costs, expected_warps, soft_distance,
 from softdtw import soft_dtw, soft_dtw_alignment
 
 rng = np.random.default_rng(1)
-KINDS = [("dtw", {}), ("adtw", {"omega": 0.7}), ("wdtw", {"g": 0.3}), ("erp", {"gap": 0.2})]
+KINDS = [("dtw", {}), ("adtw", {"omega": 0.7})]
 
 
 def all_grid_paths(n, m):
@@ -129,7 +129,7 @@ def test_barycenter_objective_gradient(kind, params, divergence):
     from family import family_objective
     Y = [rng.normal(size=(6, 1)), rng.normal(size=(8, 1)), rng.normal(size=(7, 1))]
     z = rng.normal(size=(5, 1))
-    kw = dict(omega=params.get("omega", 0.0), g=params.get("g", 0.05), divergence=divergence)
+    kw = dict(omega=params.get("omega", 0.0), divergence=divergence)
     _, grad = family_objective(z, Y, kind, 0.3, **kw)
     eps, fd = 1e-6, np.zeros_like(z)
     for idx in np.ndindex(*z.shape):

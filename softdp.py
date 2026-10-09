@@ -1,6 +1,6 @@
-"""A general soft dynamic program over the alignment grid, and the soft elastic
-distances it yields (soft-DTW, soft-ADTW, soft-WDTW, soft-ERP) plus their
-debiased "divergence" versions.
+"""A general soft dynamic program over the alignment grid, and the soft distances
+it yields: soft-DTW and soft-DTW with a warping penalty omega (kind 'adtw', the
+soft counterpart of amerced DTW), plus their debiased "divergence" versions.
 
 Grid and edges
 --------------
@@ -123,24 +123,13 @@ def _pad(M):
     return out
 
 
-def wdtw_weights(n, m, g=0.05, wmax=1.0):
-    """Logistic weight on the phase difference |i - j| (Jeong et al., 2011)."""
-    i, j = np.arange(1, n + 1)[:, None], np.arange(1, m + 1)[None, :]
-    half = max(n, m) / 2.0
-    return wmax / (1.0 + np.exp(-g * (np.abs(i - j) - half)))
-
-
-def edge_costs(x, y, kind="dtw", omega=0.0, g=0.05, gap=0.0):
+def edge_costs(x, y, kind="dtw", omega=0.0):
     """Edge cost arrays (Cd, Cv, Ch) of shape (n+1, m+1) for a given distance.
 
     kind = 'dtw'   : all three edges cost delta_ij (soft-DTW)
-         = 'adtw'  : warping edges (down/right) cost delta_ij + omega (amerced DTW)
-         = 'wdtw'  : all edges cost w(|i-j|) * delta_ij (weighted DTW)
-         = 'erp'   : diagonal costs ||x_i - y_j||^2, down costs ||x_i - gap||^2
-                     (x_i aligned to a gap), right costs ||y_j - gap||^2; borders allowed
+         = 'adtw'  : warping edges (down/right) cost delta_ij + omega
+                     (soft-DTW with a warping penalty)
     """
-    x, y = _as_2d(x), _as_2d(y)
-    n, m = len(x), len(y)
     D = _pad(sqeuclidean_cost(x, y))
     if kind == "dtw":
         Cd = _forbid_borders(D.copy())
@@ -149,38 +138,17 @@ def edge_costs(x, y, kind="dtw", omega=0.0, g=0.05, gap=0.0):
         Cd = _forbid_borders(D.copy())
         Cw = _forbid_borders(D + omega)
         return Cd, Cw, Cw.copy()
-    if kind == "wdtw":
-        C = _forbid_borders(D * _pad(wdtw_weights(n, m, g)))
-        return C, C.copy(), C.copy()
-    if kind == "erp":
-        gx = ((x - gap) ** 2).sum(1)  # cost of matching x_i with a gap
-        gy = ((y - gap) ** 2).sum(1)
-        Cd = D.copy()
-        Cd[0, :], Cd[:, 0] = np.inf, np.inf
-        Cv = np.zeros((n + 1, m + 1))
-        Cv[1:, :] = gx[:, None]          # entering (i, j) from (i-1, j), any j >= 0
-        Cv[0, :] = np.inf
-        Ch = np.zeros((n + 1, m + 1))
-        Ch[:, 1:] = gy[None, :]          # entering (i, j) from (i, j-1), any i >= 0
-        Ch[:, 0] = np.inf
-        return Cd, Cv, Ch
     raise ValueError(kind)
 
 
-def _grad_x(x, y, P, kind, g=0.05, gap=0.0):
-    """Chain rule from the expected edge usages P = (Pd, Pv, Ph) to x."""
+def _grad_x(x, y, P):
+    """Chain rule from the expected edge usages P = (Pd, Pv, Ph) to x.
+
+    For both kinds every edge entering cell (i, j) costs delta_ij (+ a constant),
+    so d/dx_i = sum_j W_ij 2 (x_i - y_j) with W the total expected usage of the cell.
+    """
     x, y = _as_2d(x), _as_2d(y)
-    Pd, Pv, Ph = (Q[1:, 1:] for Q in P)
-    if kind in ("dtw", "adtw"):
-        W = Pd + Pv + Ph
-    elif kind == "wdtw":
-        W = (Pd + Pv + Ph) * wdtw_weights(len(x), len(y), g)
-    elif kind == "erp":
-        # diagonal edges: d||x_i - y_j||^2 ; down edges (all j >= 0): d||x_i - gap||^2
-        down = P[1][1:, :].sum(1)
-        return 2.0 * (Pd.sum(1)[:, None] * x - Pd @ y) + 2.0 * down[:, None] * (x - gap)
-    else:
-        raise ValueError(kind)
+    W = sum(Q[1:, 1:] for Q in P)
     return 2.0 * (W.sum(1)[:, None] * x - W @ y)
 
 
@@ -190,15 +158,14 @@ def soft_distance(x, y, gamma, kind="dtw", **params):
 
 
 def soft_distance_value_and_grad(x, y, gamma, kind="dtw", **params):
-    """Value and gradient wrt x. Also returns d/d omega for 'adtw' (= expected #warps)."""
+    """Value and gradient wrt x (see expected_warps for d/d omega)."""
     Cd, Cv, Ch = edge_costs(x, y, kind, **params)
     value, P = soft_dp(Cd, Cv, Ch, gamma)
-    grad = _grad_x(x, y, P, kind, **{k: v for k, v in params.items() if k in ("g", "gap")})
-    return value, grad
+    return value, _grad_x(x, y, P)
 
 
 def expected_warps(x, y, gamma, omega=0.0):
-    """d soft-ADTW / d omega: expected number of down + right steps."""
+    """d soft-DTW_omega / d omega: expected number of down + right (warping) steps."""
     Cd, Cv, Ch = edge_costs(x, y, "adtw", omega=omega)
     _, (Pd, Pv, Ph) = soft_dp(Cd, Cv, Ch, gamma)
     return Pv.sum() + Ph.sum()
