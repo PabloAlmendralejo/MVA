@@ -9,28 +9,43 @@ import numpy as np
 import torch
 from numba import njit, prange
 
+from softdp import soft_dp_backward, soft_dp_forward
 from softdtw import sdtw_forward, sdtw_backward
 
 
 @njit(parallel=True, cache=True)
-def _batch_value_and_alignment(D, gamma):
-    """D: (B, n, m) cost matrices -> values (B,), alignments E (B, n, m)."""
+def _batch_value_and_alignment(D, gamma, omega):
+    """D: (B, n, m) cost matrices -> values (B,), alignments E (B, n, m).
+
+    omega = 0: soft-DTW (Algorithms 1-2). omega > 0: soft-DTW with a warping
+    penalty, through the general soft DP of softdp.py; E is then the expected
+    usage of each cell (summed over the three edges entering it).
+    """
     B, n, m = D.shape
     values = np.empty(B)
     E = np.empty((B, n, m))
     for b in prange(B):
-        R = sdtw_forward(D[b], gamma)
-        values[b] = R[n, m]
-        E[b] = sdtw_backward(D[b], R, gamma)
+        if omega == 0.0:
+            R = sdtw_forward(D[b], gamma)
+            values[b] = R[n, m]
+            E[b] = sdtw_backward(D[b], R, gamma)
+        else:
+            Cd = np.full((n + 1, m + 1), np.inf)
+            Cd[1:, 1:] = D[b]
+            Cw = Cd + omega
+            R = soft_dp_forward(Cd, Cw, Cw, gamma)
+            values[b] = R[n, m]
+            Pd, Pv, Ph = soft_dp_backward(Cd, Cw, Cw, R, gamma)
+            E[b] = (Pd + Pv + Ph)[1:, 1:]
     return values, E
 
 
 class SoftDTWFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x, y, gamma):
+    def forward(ctx, x, y, gamma, omega=0.0):
         D = torch.cdist(x, y) ** 2  # (B, n, m) squared Euclidean costs
         values, E = _batch_value_and_alignment(
-            D.detach().cpu().double().numpy(), float(gamma))
+            D.detach().cpu().double().numpy(), float(gamma), float(omega))
         E = torch.from_numpy(E).to(dtype=x.dtype, device=x.device)
         ctx.save_for_backward(x, y, E)
         return torch.from_numpy(values).to(dtype=x.dtype, device=x.device)
@@ -42,25 +57,32 @@ class SoftDTWFunction(torch.autograd.Function):
         # d/dx_i = sum_j E_ij 2 (x_i - y_j) ;  d/dy_j = sum_i E_ij 2 (y_j - x_i)
         grad_x = 2.0 * (E.sum(2, keepdim=True) * x - E @ y) * g
         grad_y = 2.0 * (E.sum(1).unsqueeze(-1) * y - E.transpose(1, 2) @ x) * g
-        return grad_x, grad_y, None
+        return grad_x, grad_y, None, None
 
 
 class SoftDTWLoss(torch.nn.Module):
-    """Soft-DTW loss between batches of series (B, n, p) and (B, m, p)."""
+    """Soft-DTW loss between batches of series (B, n, p) and (B, m, p).
 
-    def __init__(self, gamma=1.0, reduction="mean"):
+    omega > 0 adds a penalty to every warping step (soft-DTW_omega);
+    divergence=True uses D(x, y) = S(x, y) - S(x, x)/2 - S(y, y)/2.
+    """
+
+    def __init__(self, gamma=1.0, reduction="mean", omega=0.0, divergence=False):
         super().__init__()
         if gamma <= 0:
             raise ValueError("gamma must be > 0")
         if reduction not in ("mean", "sum", "none"):
             raise ValueError("reduction must be 'mean', 'sum' or 'none'")
-        self.gamma = gamma
+        self.gamma, self.omega, self.divergence = gamma, omega, divergence
         self.reduction = reduction
 
     def forward(self, x, y):
         if x.dim() == 2:  # (B, n) univariate -> (B, n, 1)
             x, y = x.unsqueeze(-1), y.unsqueeze(-1)
-        values = SoftDTWFunction.apply(x, y, self.gamma)
+        S = lambda a, b: SoftDTWFunction.apply(a, b, self.gamma, self.omega)
+        values = S(x, y)
+        if self.divergence:
+            values = values - 0.5 * S(x, x) - 0.5 * S(y, y)
         if self.reduction == "mean":
             return values.mean()
         if self.reduction == "sum":
