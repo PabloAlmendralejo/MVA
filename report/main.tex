@@ -135,7 +135,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 \begin{table}[t]
 \centering\small
-\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses.}
+\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Middle block: our soft-DTW$_\omega$ (Section~4.5) on the same draws, against the same DBA barycenters.}
 \label{tab:repro}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
@@ -147,6 +147,10 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 & vs DBA, Euclidean init & 8 (4) & 25 (47) & 75 (80) & 100 (90) \\
 & vs subgrad., random init & 75 (96) & 100 (97) & 100 (97) & 100 (97) \\
 & vs subgrad., Euclidean init & 17 (35) & 75 (72) & 92 (92) & 100 (97) \\
+\midrule
+\multirow{2}{*}{\shortstack[l]{Ours: soft-DTW$_\omega$\\$\omega=0.1$ / $\omega=1$}}
+& vs DBA, random init & -- & 83 / 58 & 83 / 58 & -- \\
+& vs DBA, Euclidean init & -- & 17 / 8 & 8 / 8 & -- \\
 \midrule
 \multirow{4}{*}{$k$-means}
 & vs DBA, random init & 10 (16) & 50 (25) & 70 (60) & 90 (77) \\
@@ -218,7 +222,7 @@ soft-DTW$_\omega$, $\gamma=0.01$, $\omega=1$ & 1.00 & 3.7 & 0.95 & 3.4 & 1.32 & 
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:family} gives a nuanced answer. \emph{From a random start}, a small warping penalty helps: soft-DTW$_\omega$ ($\gamma=0.1$, $\omega=0.1$) reaches the lowest DTW loss (median $8\%$ below soft-DTW $\gamma=0.01$, better on 9 of 12 datasets) while being $1.6\times$ faster, and with $\omega=1$ the train loss is no better but the held-out loss is $5\%$ lower, i.e.\ the penalty limits over-fitting to the averaged series. Penalising warping removes the many degenerate paths from the soft-minimum, which both regularises the barycenter and makes the optimisation cheaper. \emph{From the Euclidean mean}, which is already close to a good solution, plain soft-DTW with small $\gamma$ remains best and the penalty costs $3$--$30\%$: the surrogate that is closest to DTW wins when there is no bad local minimum to escape. In short, no surrogate dominates: the right amount of smoothing and of warping penalty depends on the starting point, which is the same lesson as for $\gamma$ in Section~4.2.
+Table~\ref{tab:family} gives a nuanced answer. \emph{From a random start}, a small warping penalty helps: soft-DTW$_\omega$ ($\gamma=0.1$, $\omega=0.1$) reaches the lowest DTW loss (median $8\%$ below soft-DTW $\gamma=0.01$, better on 9 of 12 datasets) while being $1.6\times$ faster, and with $\omega=1$ the train loss is no better but the held-out loss is $5\%$ lower, i.e.\ the penalty limits over-fitting to the averaged series. Penalising warping removes the many degenerate paths from the soft-minimum, which both regularises the barycenter and makes the optimisation cheaper. Against DBA, however, soft-DTW$_\omega$ wins on fewer datasets than soft-DTW (83\% vs.\ 92--100\%, Table~\ref{tab:repro}): it gains more where DBA is trapped (down to $0.21\times$ DBA's loss) but also loses on some datasets (up to $1.4\times$). \emph{From the Euclidean mean}, which is already close to a good solution, plain soft-DTW with small $\gamma$ remains best and the penalty costs $3$--$30\%$: the surrogate that is closest to DTW wins when there is no bad local minimum to escape. In short, no surrogate dominates: the right amount of smoothing and of warping penalty depends on the starting point, which is the same lesson as for $\gamma$ in Section~4.2.
 
 \subsection{Soft-DTW$_\omega$ for forecasting}
 We repeat the forecasting experiment of Table~\ref{tab:forecast} ($\gamma=0.01$, 13 datasets), training the MLP with soft-DTW$_\omega$. Besides the paper's two metrics, we measure the timing error of the forecast, the distance between the predicted and true position of the maximum, in \% of the horizon.
