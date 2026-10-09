@@ -33,7 +33,7 @@ A time series can be defines as a matrix of the form "define it", so given two t
 \paragraph{Contributions and work repartition.}
 \textbf{Implementation:} we implemented soft-DTW from scratch (forward and backward recursions in Numba, a PyTorch loss with the hand-written backward, and an anti-diagonal PyTorch version that runs on GPU). \texttt{tslearn}~\cite{tavenard2020tslearn} is only used to load the UCR data, as the DBA baseline and as a numerical cross-check.
 \textbf{Reproduction:} we reproduce, on 10--13 UCR datasets, the paper's barycenter (Table 1), $k$-means (Table 2), nearest-centroid (Fig.~7) and forecasting (Table 3) experiments.
-\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits, and add the baselines it does not compare to (Euclidean nearest centroid, 1-NN DTW); (ii) we show that soft-DTW is one instance of a soft dynamic program with edge costs~\cite{mensch2018differentiable}, implement it generically and derive from it new soft distances, in particular a \emph{soft-DTW with a warping penalty} that charges a cost $\omega$ for every time-stretching step, together with soft versions of weighted DTW~\cite{jeong2011weighted} and ERP~\cite{chen2004marriage} and the debiased (divergence) version of each~\cite{blondel2021differentiable}; (iii) we compare this family with a neutral metric (1-NN accuracy, hyper-parameters chosen on validation).
+\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits, and add the baselines it does not compare to (Euclidean nearest centroid, 1-NN DTW); (ii) we show that soft-DTW is one instance of a soft dynamic program with edge costs~\cite{mensch2018differentiable}, implement it generically and derive from it new soft distances, in particular a soft-DTW with a warping penalty that charges a cost $\omega$ for every time-stretching step, together with soft versions of weighted DTW~\cite{jeong2011weighted} and ERP~\cite{chen2004marriage} and the debiased (divergence) version of each~\cite{blondel2021differentiable}; (iii) following the paper's own protocol, we use every member of this family as a surrogate to compute DTW barycenters and compare them under the hard DTW loss, both on the averaged series and on unseen series of the same class.
 \textbf{Work repartition:} \todo{describe the split between the two students}.
 
 % ======================================================================
@@ -181,7 +181,7 @@ Table~\ref{tab:forecast} reproduces the main claim: each loss wins on its own me
 \end{figure}
 
 \subsection{A family of soft alignment distances}
-\todo{results of exp\_family: 1-NN accuracy of soft-DTW / soft-DTW$_\omega$ / soft-WDTW / soft-ERP, raw vs divergence, vs Euclidean and 1D Wasserstein controls; selected gamma and omega}
+\todo{results of exp\_family\_barycenters: Table~1 protocol with soft-DTW, its divergence, soft-DTW$_\omega$ ($\omega\in\{0.1,1\}$), soft-WDTW and soft-ERP as barycenter surrogates; hard DTW loss on the 10 averaged series and on unseen series of the class}
 
 % ======================================================================
 \section{Conclusion}

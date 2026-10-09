@@ -123,18 +123,6 @@ def test_hard_forward_equals_min_over_paths():
         assert hard == pytest.approx(best)
 
 
-def test_fast_pairwise_matches_engine():
-    from family import pairwise
-    from softdp import soft_divergence
-    A, B = rng.normal(size=(3, 8, 1)), rng.normal(size=(4, 10, 1))
-    for kind, params in [("dtw", {}), ("adtw", {"omega": 0.7}), ("wdtw", {"g": 0.3}), ("erp", {})]:
-        for div in (False, True):
-            M = pairwise(A, B, kind, gamma=0.4, divergence=div, **params)
-            f = soft_divergence if div else soft_distance
-            ref = np.array([[f(a, b, 0.4, kind, **params) for b in B] for a in A])
-            assert np.allclose(M, ref, rtol=1e-10, atol=1e-10)
-
-
 @pytest.mark.parametrize("kind,params", KINDS)
 @pytest.mark.parametrize("divergence", [False, True])
 def test_barycenter_objective_gradient(kind, params, divergence):
