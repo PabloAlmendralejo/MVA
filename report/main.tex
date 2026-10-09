@@ -71,7 +71,7 @@ This means that the gradient can be interpreted in terms of how much $r_{n,m}$ d
 \begin{equation}
 e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l}-r_{i,j}-\delta_{k,l})/\gamma\big),\qquad e_{n,m}=1,
 \end{equation}
-where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, and can be read directly from the table $R=[r_{i,j}]$ computed in the forward pass, which is therefore kept in memory ($O(nm)$ instead of $O(n)$ for DTW alone). For the squared Euclidean cost, $\nabla_{x_i}\sdtw=2\sum_j e_{i,j}(x_i-y_j)$: each $x_i$ is pulled towards the $y_j$ it is likely aligned with. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
+where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, and can be read directly from the table $R=[r_{i,j}]$ computed in the forward pass, which is therefore kept in memory. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
 
 \paragraph{Learning with soft-DTW.}
 The barycenter of $y_1,\dots,y_N$ solves $\min_{x\in\R^{n\times p}}\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$ (Eq.~4 of the paper), a smooth but non-convex problem that we solve with L-BFGS. $k$-means alternates assignment and barycenter steps under $\sdtw$; the nearest-centroid classifier uses one barycenter per class; and for forecasting $\sdtw$ is the training loss of a network (our PyTorch \texttt{autograd.Function}).
