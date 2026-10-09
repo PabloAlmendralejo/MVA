@@ -23,16 +23,186 @@
 \maketitle
 \vspace{-1.5em}
 
-\input{sections/1_introduction}
-\input{sections/2_method}
-\input{sections/3_data}
-\input{sections/4_results}
-\input{sections/5_conclusion}
+% ======================================================================
+\section{Introduction and contributions}
+
+Comparing time series point by point (Euclidean distance) is fragile: two recordings of the same phenomenon are often shifted, locally stretched or of different lengths. Dynamic Time Warping (DTW)~\cite{sakoe1978dynamic} handles this by first finding the cheapest monotone \emph{alignment} between the two series. DTW is however a minimum over alignments, hence not differentiable, and its (sub)gradient jumps whenever the optimal alignment changes. This makes it a poor training loss, and averaging or clustering under DTW has relied on heuristics such as DBA~\cite{petitjean2011global}.
+
+Cuturi and Blondel~\cite{cuturi2017soft} replace the minimum by a \emph{soft}-minimum, the same entropic smoothing that turns optimal transport into Sinkhorn distances~\cite{cuturi2013sinkhorn}. The resulting soft-DTW is smooth, has the same $O(nm)$ cost as DTW, and its gradient is obtained by a backward pass over Bellman's recursion. The paper uses it to compute barycenters, run $k$-means, classify with nearest centroids and train networks that output time series.
+
+\paragraph{Contributions and work repartition.}
+\textbf{Implementation:} we implemented soft-DTW from scratch (forward and backward recursions in Numba, a PyTorch loss with the hand-written backward, and an anti-diagonal PyTorch version that runs on GPU). No soft-DTW code was reused; \texttt{tslearn}~\cite{tavenard2020tslearn} is only used to load the UCR data, as the DBA baseline and as a numerical cross-check. The implementation is verified against brute-force enumeration of all alignments, finite differences and PyTorch autograd (85 unit tests).
+\textbf{Reproduction:} we reproduce, on 10--13 UCR datasets, the paper's barycenter (Table 1), $k$-means (Table 2), nearest-centroid (Fig.~7) and forecasting (Table 3) experiments.
+\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits, and add the baselines it does not compare to (Euclidean nearest centroid, 1-NN DTW); (ii) we show that soft-DTW is one instance of a soft dynamic program with edge costs~\cite{mensch2018differentiable}, implement it generically and derive from it soft versions of amerced DTW~\cite{herrmann2023amercing}, weighted DTW~\cite{jeong2011weighted} and ERP~\cite{chen2004marriage}, with their debiased divergences~\cite{blondel2021differentiable}; (iii) we compare this family with a neutral metric (1-NN accuracy, hyper-parameters chosen on validation).
+\textbf{Work repartition:} \todo{describe the split between the two students, or remove if working alone}.
+
+% ======================================================================
+\section{Method}
+
+\paragraph{DTW and soft-DTW.}
+Let $x\in\R^{n\times p}$, $y\in\R^{m\times p}$ be two time series and $\Delta(x,y)=[\|x_i-y_j\|^2]_{ij}\in\R^{n\times m}$ their cost matrix. An alignment is a binary matrix $A\in\mathcal A_{n,m}$ encoding a path from $(1,1)$ to $(n,m)$ made of $\downarrow$ ($x$ advances, $y_j$ is repeated), $\rightarrow$ ($y$ advances) and $\searrow$ (both advance) steps; $|\mathcal A_{n,m}|$ is a Delannoy number, exponential in $n,m$. With the soft-minimum $\minop(a_1,\dots,a_k)=-\gamma\log\sum_i e^{-a_i/\gamma}$ ($\min$ when $\gamma=0$),
+\begin{equation}
+\mathrm{dtw}(x,y)=\min_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle,\qquad
+\sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle .
+\end{equation}
+Because $\minop$ is a log-sum-exp, $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, hence in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
+
+\paragraph{Forward pass (Algorithm 1).}
+Both quantities are computed by Bellman's recursion, $r_{0,0}=0$, $r_{i,0}=r_{0,j}=+\infty$,
+\begin{equation}
+r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(x,y)=r_{n,m},
+\end{equation}
+in $O(nm)$ time; $\minop$ is evaluated with the log-sum-exp trick. The whole table $R=[r_{i,j}]$ is stored for the backward pass.
+
+\paragraph{Gradient (Algorithm 2).}
+By the chain rule, $\nabla_x\sdtw=(\partial\Delta/\partial x)^\top E$ with $E=\partial r_{n,m}/\partial\Delta=\mathbb E_\gamma[A]$, the expected alignment under the Gibbs distribution $p_\gamma(A)\propto e^{-\langle A,\Delta\rangle/\gamma}$: $e_{i,j}$ is the probability that a random path visits cell $(i,j)$. Computing $\mathbb E_\gamma[A]$ directly costs $O(n^2m^2)$; the paper instead back-propagates through the recursion. Since $r_{i,j}$ only influences its three successors,
+\begin{equation}
+e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l}-r_{i,j}-\delta_{k,l})/\gamma\big),\qquad e_{n,m}=1,
+\end{equation}
+where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, read from the stored table at no extra log-sum-exp cost. For the squared Euclidean cost, $\nabla_{x_i}\sdtw=2\sum_j e_{i,j}(x_i-y_j)$: each $x_i$ is pulled towards the $y_j$ it is likely aligned with. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
+
+\paragraph{Learning with soft-DTW.}
+The barycenter of $y_1,\dots,y_N$ solves $\min_{x\in\R^{n\times p}}\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$ (Eq.~4 of the paper), a smooth but non-convex problem that we solve with L-BFGS. $k$-means alternates assignment and barycenter steps under $\sdtw$; the nearest-centroid classifier uses one barycenter per class; and for forecasting $\sdtw$ is the training loss of a network (our PyTorch \texttt{autograd.Function}).
+
+\paragraph{A family of soft alignment distances (our extension).}
+Soft-DTW is one instance of a soft dynamic program on the alignment grid~\cite{mensch2018differentiable}, in which each of the three edges entering cell $(i,j)$ has its own cost:
+\begin{equation}
+r_{i,j}=\minop\{r_{i-1,j-1}+c^{\searrow}_{i,j},\; r_{i-1,j}+c^{\downarrow}_{i,j},\; r_{i,j-1}+c^{\rightarrow}_{i,j}\}.
+\end{equation}
+The same backward pass returns the expected usage of every edge, from which the gradient w.r.t.\ $x$ follows by the chain rule. Choosing the edge costs gives: soft-DTW ($c=\delta_{i,j}$ for all edges); \emph{soft amerced DTW} (soft-ADTW), $c^{\downarrow}=c^{\rightarrow}=\delta_{i,j}+\omega$, a soft version of~\cite{herrmann2023amercing} where each warping step pays $\omega$; \emph{soft weighted DTW}, $c=w(|i-j|)\,\delta_{i,j}$ with a logistic weight~\cite{jeong2011weighted}; and \emph{soft ERP}~\cite{chen2004marriage}, where non-diagonal steps match a point with a gap. For soft-ADTW, $\omega=0$ recovers soft-DTW, $\omega\to\infty$ forbids warping (Euclidean distance for equal lengths), and $\partial r_{n,m}/\partial\omega$ is the expected number of warping steps. This matters because the entropic smoothing of soft-DTW carries a data-independent prior: for large $\gamma$, $E$ tends to the uniform average over paths, concentrated around the diagonal whatever the data (Fig.~\ref{fig:E}, right); step costs reshape this prior. Finally, each member $S$ can be debiased into the divergence $D(x,y)=S(x,y)-\tfrac12S(x,x)-\tfrac12S(y,y)$, which vanishes at $x=y$~\cite{blondel2021differentiable}.
+
+% ======================================================================
+\section{Data}
+\label{sec:data}
+
+We use 13 univariate datasets of the UCR archive~\cite{ucr2018} (loaded with \texttt{tslearn}), chosen to span domains (ECG, motion, image outlines, power demand, synthetic), lengths (24 to 512) and numbers of classes (2 to 60), while keeping the quadratic cost of DTW manageable on a laptop (Table~\ref{tab:data}). The paper used a subset of 79 datasets without stating the selection criterion (and, as its Table~2 percentages imply, only 57--58 of them for $k$-means); our tables are a smaller but diverse replication, with 10--13 datasets depending on the cost of each experiment.
+
+\paragraph{Diagnosis.}
+All series are z-normalised (mean $0$, standard deviation $1$ per series), so pointwise costs $\delta_{i,j}$ are $O(1)$ and the smoothing parameter $\gamma$ has a comparable meaning across datasets; this is not true for raw data, where $\gamma$ should scale with the typical cost. To check whether the data actually contain the temporal distortions DTW is designed for, we drew 200 random pairs of series of the same class per dataset and measured (i) the global lag maximising their cross-correlation and (ii) the fraction of the Euclidean cost removed by DTW, $1-\mathrm{dtw}/\|x-y\|^2$. Two regimes appear. Datasets such as CBF, Trace, SyntheticControl or ECG200 contain large global shifts (10\% of the pairs are shifted by 15--35\% of the length). Others (Coffee, ArrowHead, Plane) are globally aligned (lag $0$), yet DTW still removes 68--90\% of the Euclidean cost: the variability is made of \emph{local} accelerations and stretches, which a global shift cannot fix but warping can. In every dataset DTW removes between 48\% and 96\% of the within-class Euclidean cost, which supports using an elastic geometry on all of them.
+
+\begin{table}[t]
+\centering\small
+\caption{Datasets and diagnosis. Lag: global shift between two series of the same class (cross-correlation), in \% of the length (median / 90th percentile). DTW gain: median share of the within-class Euclidean cost removed by DTW.}
+\label{tab:data}
+\begin{tabular}{lrrrrcc}
+\toprule
+Dataset & Train & Test & Length & Classes & Lag \% (med / p90) & DTW gain \\
+\midrule
+ItalyPowerDemand & 67 & 1029 & 24 & 2 & 0.0 / 8.3 & 0.48 \\
+SyntheticControl & 300 & 300 & 60 & 6 & 3.3 / 35.2 & 0.76 \\
+TwoLeadECG & 23 & 1139 & 82 & 2 & 2.4 / 6.1 & 0.90 \\
+ECG200 & 100 & 100 & 96 & 2 & 2.1 / 19.8 & 0.79 \\
+MedicalImages & 381 & 760 & 99 & 10 & 1.0 / 8.2 & 0.78 \\
+CBF & 30 & 900 & 128 & 3 & 4.7 / 25.8 & 0.85 \\
+ECGFiveDays & 23 & 861 & 136 & 2 & 1.5 / 3.7 & 0.90 \\
+Plane & 105 & 105 & 144 & 7 & 0.0 / 0.7 & 0.90 \\
+GunPoint & 50 & 150 & 150 & 2 & 0.7 / 5.3 & 0.77 \\
+ArrowHead & 36 & 175 & 251 & 3 & 0.0 / 0.0 & 0.85 \\
+Trace & 100 & 100 & 275 & 4 & 4.7 / 14.6 & 0.96 \\
+Coffee & 28 & 28 & 286 & 2 & 0.0 / 0.0 & 0.68 \\
+ShapesAll & 600 & 600 & 512 & 60 & 1.2 / 27.1 & 0.93 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ======================================================================
+\section{Results}
+
+\subsection{Implementation and verification}
+Forward and backward passes are compiled with Numba; a PyTorch \texttt{autograd.Function} calls them, and a second, pure PyTorch version processes whole anti-diagonals at once ($n+m$ sequential steps instead of $nm$), which is the scheme GPU implementations use. We check the value and $E$ against \emph{brute-force enumeration of every alignment} (all Delannoy paths, $n,m\le5$, $\gamma\in[10^{-2},10]$, error $<10^{-10}$), the gradient against finite differences, the bound $\mathrm{dtw}-\gamma\log|\mathcal A|\le\sdtw\le\mathrm{dtw}$, the agreement with \texttt{tslearn}, and the custom backward against autograd. All variants scale as $O(nm)$ (fitted log-log slopes $2.02$--$2.04$), but constants differ by orders of magnitude: for $n=m=64$ forward+backward takes $0.3$\,ms with Numba, $20$\,ms with the same code in pure Python and $0.75$\,s with a cell-by-cell PyTorch forward differentiated by autograd, which confirms the paper's remark that a custom backward is essential. Fig.~\ref{fig:E} shows how $E$ moves from the hard DTW path ($\gamma\to0$) to a diffuse band, and for large $\gamma$ to a data-independent diagonal band.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{E_vs_gamma.png}
+\caption{Expected alignment $E=\mathbb E_\gamma[A]$ between two shifted bumps for increasing $\gamma$; white: optimal DTW path. For $\gamma=10$ the alignment ignores the data and concentrates around the diagonal.}
+\label{fig:E}
+\end{figure}
+
+\subsection{Barycenters and $k$-means (Tables 1--2 of the paper)}
+Protocol as in the paper: for each dataset, 10 random draws of 10 series of one class; barycenters from the same initialisation (random $\mathcal N(0,1)$ or Euclidean mean) with at most 100 iterations; soft-DTW with L-BFGS, DBA~\cite{petitjean2011global} (\texttt{tslearn}) and a batch subgradient method with backtracking line search~\cite{schultz2018nonsmooth}. All methods are scored with the \emph{hard} DTW objective (Eq.~4 with $\gamma=0$), which is the objective DBA itself minimises. $k$-means uses $k$ = number of classes, at most 30 Lloyd and 100 barycenter iterations, training sets capped at 100 series, 3 random initialisations (random series) and a Euclidean $k$-means initialisation.
+
+\begin{table}[t]
+\centering\small
+\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses.}
+\label{tab:repro}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcccc}
+\toprule
+& & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
+\midrule
+\multirow{4}{*}{Barycenters}
+& vs DBA, random init & 58 (41) & 92 (94) & 100 (100) & 100 (97) \\
+& vs DBA, Euclidean init & 8 (4) & 25 (47) & 75 (80) & 100 (90) \\
+& vs subgrad., random init & 75 (96) & 100 (97) & 100 (97) & 100 (97) \\
+& vs subgrad., Euclidean init & 17 (35) & 75 (72) & 92 (92) & 100 (97) \\
+\midrule
+\multirow{4}{*}{$k$-means}
+& vs DBA, random init & 10 (16) & 50 (25) & 70 (60) & 90 (77) \\
+& vs DBA, Euclidean init & 10 (29) & 10 (24) & 60 (55) & 90 (69) \\
+& vs subgrad., random init & 20 (42) & 60 (58) & 100 (76) & 90 (96) \\
+& vs subgrad., Euclidean init & 10 (46) & 10 (50) & 90 (66) & 100 (84) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:repro} reproduces the paper's trends closely: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. The paper only reports win rates; magnitudes and costs nuance the picture. \emph{Barycenters:} from a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). \emph{$k$-means:} gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). \emph{Cost:} with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters but losses up to $3\times$ that of DBA: smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size (from a random start it stalls $30\times$ above DBA on Coffee and Trace), which inflates the win rates against it.
+
+\subsection{Nearest-centroid classification (Fig.~7 of the paper)}
+Following the paper, data are pooled and split 50/25/25 (3 random stratified splits) and $\gamma$ is selected on validation among 15 log-spaced values in $[10^{-3},10]$. Soft-DTW centroids are at least as accurate as DBA centroids on 83\% of the datasets (paper: 75\%), with mean accuracy $0.86$ vs $0.81$. Two baselines the paper does not report put this in context: Euclidean centroids reach $0.77$, but \textbf{1-NN DTW reaches $0.93$} and is better than soft-DTW centroids on 9 of 12 datasets. Nearest centroids trade accuracy for a much smaller model and faster prediction. Moreover, the selected $\gamma$ is unstable: on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected, i.e.\ there is no reliable default for $\gamma$.
+
+\subsection{Multistep-ahead forecasting (Table 3 of the paper)}
+As in the paper, the first 60\% of each series is the input and the remaining 40\% the target; a one-hidden-layer MLP (256 sigmoid units, Adam, $400$ full-batch epochs, hyper-parameters not given in the paper) is trained with the Euclidean loss or with soft-DTW, from random weights or from the Euclidean-trained network, on 13 datasets.
+
+\begin{table}[h]
+\centering\small
+\caption{Average rank (1 = best) of the five models on test, over 13 datasets; the paper's values (79 datasets) in parentheses.}
+\label{tab:forecast}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccccc}
+\toprule
+Test metric & Init & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
+\midrule
+\multirow{2}{*}{DTW} & random & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & \textbf{2.23} (2.79) & 2.85 (\textbf{1.87}) \\
+& Euclidean & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & \textbf{1.69} (\textbf{1.29}) \\
+\midrule
+\multirow{2}{*}{Euclidean} & random & \textbf{1.31} (\textbf{1.05}) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
+& Euclidean & 2.77 (\textbf{1.70}) & \textbf{1.62} (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:forecast} reproduces the main claim: each loss wins on its own metric, and when initialised from the Euclidean network the ordering in $\gamma$ is the paper's (median test DTW reduced by $19$--$20\%$ for $\gamma\le0.01$). Two differences are informative. First, trained from scratch with $\gamma=0.001$, the network is unstable on some datasets (test DTW $3.2\times$ that of the Euclidean model on Coffee, $2\times$ on Plane), in line with the degenerate alignments reported for soft-DTW training in~\cite{zeitler2023stabilizing}; the Euclidean warm start removes the problem. Second, the price of shift invariance is large in Euclidean terms: the median test Euclidean error of soft-DTW models is $1.5\times$ ($\gamma=0.1$) to $3.4\times$ ($\gamma=0.001$) that of the Euclidean model (Fig.~\ref{fig:forecast}). Fig.~\ref{fig:forecast} shows a more worrying failure: on ShapesAll the soft-DTW network (random init) outputs an almost flat line with isolated spikes at the extreme values, and yet obtains a \emph{lower} test DTW than the Euclidean network ($6.6$ vs $9.3$). Free warping lets a whole target segment be matched to a single predicted point of the right height, so degenerate predictions are cheap under DTW --- both as a training loss and as an evaluation metric. Such timing and shape errors are not penalised by soft-DTW~\cite{leguen2019shape}; controlling them requires a cost on warping, which motivates the next section.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{forecast_examples.png}
+\caption{Test forecasts (last 40\%) from MLPs trained with the Euclidean loss and with soft-DTW ($\gamma=0.01$, random init). On ShapesAll the soft-DTW model degenerates into a flat line with spikes, which DTW scores better than the Euclidean forecast.}
+\label{fig:forecast}
+\end{figure}
+
+\subsection{A family of soft alignment distances}
+\todo{results of exp\_family: 1-NN accuracy of soft-DTW / soft-ADTW / soft-WDTW / soft-ERP, raw vs divergence, vs Euclidean and 1D Wasserstein controls; selected gamma and omega}
+
+% ======================================================================
+\section{Conclusion}
+We re-implemented soft-DTW from scratch, verified it against exhaustive enumeration of alignments, and reproduced the paper's barycenter, $k$-means and nearest-centroid results on 10--12 UCR datasets: the main claims hold, as do the trends in $\gamma$. Measuring magnitudes, costs and simple baselines shows their limits: large gains over DBA only from poor initialisations, a 10--15$\times$ computational overhead for the small $\gamma$ that win, nearest centroids well below 1-NN DTW, and no stable choice of $\gamma$. \todo{one or two sentences on the forecasting and family results.}
+
 
 \bibliographystyle{plain}
 \bibliography{bib}
 
 \appendix
-\input{sections/6_appendix}
+% ======================================================================
+\section{Additional figures}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.55\linewidth]{timing.png}
+\caption{Forward + backward time vs.\ length $n=m$ (log-log). All implementations are quadratic; Numba is $\sim$65$\times$ faster than the same code in pure Python and $\sim$2400$\times$ faster than a cell-by-cell PyTorch forward differentiated by autograd ($n=64$).}
+\label{fig:timing}
+\end{figure}
+
+\todo{qualitative figures: barycenters on ECG200 (paper Fig.~5), interpolation on GunPoint (Fig.~4), $k$-means clusters on CBF (Fig.~6), forecasts on ShapesAll (Fig.~1).}
+
 
 \end{document}
