@@ -220,9 +220,40 @@ soft-DTW$_\omega$, $\gamma=0.01$, $\omega=1$ & 1.00 & 3.7 & 0.95 & 3.4 & 1.32 & 
 
 Table~\ref{tab:family} gives a nuanced answer. \emph{From a random start}, a small warping penalty helps: soft-DTW$_\omega$ ($\gamma=0.1$, $\omega=0.1$) reaches the lowest DTW loss (median $8\%$ below soft-DTW $\gamma=0.01$, better on 9 of 12 datasets) while being $1.6\times$ faster, and with $\omega=1$ the train loss is no better but the held-out loss is $5\%$ lower, i.e.\ the penalty limits over-fitting to the averaged series. Penalising warping removes the many degenerate paths from the soft-minimum, which both regularises the barycenter and makes the optimisation cheaper. \emph{From the Euclidean mean}, which is already close to a good solution, plain soft-DTW with small $\gamma$ remains best and the penalty costs $3$--$30\%$: the surrogate that is closest to DTW wins when there is no bad local minimum to escape. In short, no surrogate dominates: the right amount of smoothing and of warping penalty depends on the starting point, which is the same lesson as for $\gamma$ in Section~4.2.
 
+\subsection{Soft-DTW$_\omega$ for forecasting}
+We repeat the forecasting experiment of Table~\ref{tab:forecast} ($\gamma=0.01$, 13 datasets), training the MLP with soft-DTW$_\omega$. Besides the paper's two metrics, we measure the timing error of the forecast, the distance between the predicted and true position of the maximum, in \% of the horizon.
+
+\begin{table}[h]
+\centering\small
+\caption{Forecasting with soft-DTW$_\omega$ ($\gamma=0.01$, 13 datasets). Median test error relative to soft-DTW (average rank among the 4 losses for DTW) and median timing error of the maximum.}
+\label{tab:forecast_omega}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lcccccc}
+\toprule
+& \multicolumn{3}{c}{Random init} & \multicolumn{3}{c}{Euclidean init} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Training loss & DTW (rank) & Euclidean & timing & DTW (rank) & Euclidean & timing \\
+\midrule
+Euclidean & 1.14 (3.2) & \textbf{0.44} & 10.1\% & 1.24 (3.5) & 0.95 & 10.1\% \\
+soft-DTW & 1 (2.2) & 1 & 20.7\% & 1 (\textbf{1.5}) & 1 & \textbf{9.1}\% \\
+soft-DTW$_\omega$, $\omega=0.1$ & \textbf{0.98 (1.5)} & 0.68 & 11.7\% & 1.01 (2.2) & 0.98 & 9.2\% \\
+soft-DTW$_\omega$, $\omega=1$ & 1.06 (3.1) & \textbf{0.44} & \textbf{9.6}\% & 1.07 (2.8) & \textbf{0.90} & 9.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{forecast_omega_examples.png}
+\caption{Test forecasts of MLPs trained from random weights with soft-DTW and with soft-DTW$_\omega$ ($\omega=1$), $\gamma=0.01$. The warping penalty removes the degenerate flat-line-and-spikes forecasts of soft-DTW on ShapesAll.}
+\label{fig:forecast_omega}
+\end{figure}
+
+Here the penalty pays off clearly (Table~\ref{tab:forecast_omega}). Trained from random weights, the realistic setting for a network, soft-DTW$_\omega$ with $\omega=0.1$ beats soft-DTW on its own metric (best average DTW rank) while reducing the Euclidean error by $32\%$ and almost halving the timing error. With $\omega=1$ the network matches the Euclidean model in Euclidean and timing error and still predicts better shapes than it ($1.06$ vs $1.14$). The penalty also removes the failures of soft-DTW: the degenerate forecasts on ShapesAll disappear (Fig.~\ref{fig:forecast_omega}), and the unstable runs on Coffee (Euclidean error $54.7\to1.2$) and Plane (DTW $0.65\to0.35$) are fixed. From the Euclidean warm start, which already avoids these failures, the differences are small. The warping penalty thus turns soft-DTW into a controllable trade-off between shape and timing.
+
 % ======================================================================
 \section{Conclusion}
-We re-implemented soft-DTW from scratch, verified it against exhaustive enumeration of alignments, and reproduced the paper's barycenter, $k$-means and nearest-centroid results on 10--12 UCR datasets: the main claims hold, as do the trends in $\gamma$. Measuring magnitudes, costs and simple baselines shows their limits: large gains over DBA only from poor initialisations, a 10--15$\times$ computational overhead for the small $\gamma$ that win, nearest centroids well below 1-NN DTW, and no stable choice of $\gamma$. \todo{one or two sentences on the forecasting and family results.}
+We re-implemented soft-DTW from scratch, verified it against exhaustive enumeration of alignments, and reproduced the paper's barycenter, $k$-means and nearest-centroid results on 10--12 UCR datasets: the main claims hold, as do the trends in $\gamma$. Measuring magnitudes, costs and simple baselines shows their limits: large gains over DBA only from poor initialisations, a 10--15$\times$ computational overhead for the small $\gamma$ that win, nearest centroids well below 1-NN DTW, and no stable choice of $\gamma$. In forecasting, the free warping of soft-DTW leads to unstable training and degenerate predictions that DTW itself scores well. Charging a penalty $\omega$ for each time-stretching step fixes these failures and gives a controllable trade-off between shape and timing; as a barycenter surrogate it helps from poor initialisations, but not from a good one.
 
 
 \bibliographystyle{plain}
