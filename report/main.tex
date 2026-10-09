@@ -56,7 +56,7 @@ Therefore, soft-DTW is the soft-minimum of the costs of all alignments:
 \end{equation}
 The soft-minimum tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Hence $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, and so in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes.
 \paragraph{Forward pass (Algorithm 1).}
-It is impossible to find the minimum by computing all the alignments, as $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach. Both are computed by Bellman's recursion: with $r_{0,0}=0$ and $r_{i,0}=r_{0,j}=+\infty$,
+It is impossible to find the minimum by computing all the alignments, as $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach. Both DTW and soft-DTW are computed by Bellman's recursion: with $r_{0,0}=0$ and $r_{i,0}=r_{0,j}=+\infty$,
 \begin{equation}
 r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(x,y)=r_{n,m},
 \end{equation}
