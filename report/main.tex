@@ -40,7 +40,7 @@ A time series can be defined as a matrix of the form $x=(x_1,\dots,x_n)\in\R^{n\
 \section{Method}
 
 \paragraph{DTW and soft-DTW.}
-Let $x\in\R^{n\times p}$, $y\in\R^{m\times p}$ be two time series and $\Delta(x,y)=[\|x_i-y_j\|^2]_{ij}\in\R^{n\times m}$ their cost matrix. An alignment is a binary matrix $A\in\mathcal A_{n,m}$ encoding a path from $(1,1)$ to $(n,m)$ made of $\downarrow$ ($x$ advances, $y_j$ is repeated), $\rightarrow$ ($y$ advances) and $\searrow$ (both advance) steps; $|\mathcal A_{n,m}|$ is a Delannoy number, exponential in $n,m$. With the soft-minimum $\minop(a_1,\dots,a_k)=-\gamma\log\sum_i e^{-a_i/\gamma}$ ($\min$ when $\gamma=0$),
+Let $x\in\R^{n\times p}$, $y\in\R^{m\times p}$ be two time series and $\Delta(x,y)=[\|x_i-y_j\|^2]_{ij}\in\R^{n\times m}$ their cost matrix. An alignment is a binary matrix $A\in\mathcal A_{n,m}$ encoding a path from $(1,1)$ to $(n,m)$ made of $\downarrow$ ($x$ advances, $y_j$ is repeated), $\rightarrow$ ($y$ advances) and $\searrow$ (both advance) steps; $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach to compute the minimum over all alignments. With the soft-minimum $\minop(a_1,\dots,a_k)=-\gamma\log\sum_i e^{-a_i/\gamma}$ ($\min$ when $\gamma=0$),
 \begin{equation}
 \mathrm{dtw}(x,y)=\min_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle,\qquad
 \sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle .
