@@ -54,8 +54,7 @@ Therefore, soft-DTW is the soft-minimum of the costs of all alignments:
 \begin{equation}
 \sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta(x,y)\rangle=-\gamma\log\sum_{A\in\mathcal A_{n,m}}e^{-\langle A,\Delta(x,y)\rangle/\gamma}.
 \end{equation}
-The soft-minimum tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Hence $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, and so in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
-
+The soft-minimum tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Hence $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, and so in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes.
 \paragraph{Forward pass (Algorithm 1).}
 Neither quantity can be computed by listing the alignments: $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach. Both are computed by Bellman's recursion: with $r_{0,0}=0$ and $r_{i,0}=r_{0,j}=+\infty$,
 \begin{equation}
@@ -78,7 +77,7 @@ Soft-DTW is one instance of a soft dynamic program on the alignment grid~\cite{m
 \begin{equation}
 r_{i,j}=\minop\{r_{i-1,j-1}+c^{\searrow}_{i,j},\; r_{i-1,j}+c^{\downarrow}_{i,j},\; r_{i,j-1}+c^{\rightarrow}_{i,j}\}.
 \end{equation}
-The same backward pass returns the expected usage of every edge, from which the gradient w.r.t.\ $x$ follows by the chain rule. Choosing the edge costs gives: soft-DTW ($c=\delta_{i,j}$ for all edges); \emph{soft-DTW with a warping penalty} (soft-DTW$_\omega$), $c^{\downarrow}=c^{\rightarrow}=\delta_{i,j}+\omega$: every step that stretches time pays a fixed penalty $\omega$ (the soft counterpart of ``amerced'' DTW~\cite{herrmann2023amercing}); \emph{soft weighted DTW}, $c=w(|i-j|)\,\delta_{i,j}$ with a logistic weight~\cite{jeong2011weighted}; and \emph{soft ERP}~\cite{chen2004marriage}, where non-diagonal steps match a point with a gap. For soft-DTW$_\omega$, $\omega=0$ recovers soft-DTW, $\omega\to\infty$ forbids warping (Euclidean distance for equal lengths), and $\partial r_{n,m}/\partial\omega$ is the expected number of warping steps. This matters because the entropic smoothing of soft-DTW carries a data-independent prior: for large $\gamma$, $E$ tends to the uniform average over paths, concentrated around the diagonal whatever the data (Fig.~\ref{fig:E}, right); step costs reshape this prior. Finally, each member $S$ can be debiased into the divergence $D(x,y)=S(x,y)-\tfrac12S(x,x)-\tfrac12S(y,y)$, which vanishes at $x=y$~\cite{blondel2021differentiable}.
+The same backward pass returns the expected usage of every edge, from which the gradient w.r.t.\ $x$ follows by the chain rule. Choosing the edge costs gives: soft-DTW ($c=\delta_{i,j}$ for all edges); \emph{soft-DTW with a warping penalty} (soft-DTW$_\omega$), $c^{\downarrow}=c^{\rightarrow}=\delta_{i,j}+\omega$: every step that stretches time pays a fixed penalty $\omega$ (the soft counterpart of ``amerced'' DTW~\cite{herrmann2023amercing}); \emph{soft weighted DTW}, $c=w(|i-j|)\,\delta_{i,j}$ with a logistic weight~\cite{jeong2011weighted}; and \emph{soft ERP}~\cite{chen2004marriage}, where non-diagonal steps match a point with a gap. For soft-DTW$_\omega$, $\omega=0$ recovers soft-DTW, $\omega\to\infty$ forbids warping (Euclidean distance for equal lengths), and $\partial r_{n,m}/\partial\omega$ is the expected number of warping steps. This matters because the entropic smoothing of soft-DTW carries a data-independent prior: for large $\gamma$, $E$ tends to the uniform average over paths, concentrated around the diagonal whatever the data (Fig.~\ref{fig:E}, right); step costs reshape this prior. Finally, smoothing introduces a bias: $S(x,x)\neq0$ (for soft-DTW, $\sdtw(x,x)<0$), so a series is not at distance zero from itself. Each member $S$ can be debiased into the divergence $D(x,y)=S(x,y)-\tfrac12S(x,x)-\tfrac12S(y,y)$, which vanishes at $x=y$~\cite{blondel2021differentiable}.
 
 % ======================================================================
 \section{Data}
@@ -190,7 +189,36 @@ Table~\ref{tab:forecast} reproduces the main claim: each loss wins on its own me
 \end{figure}
 
 \subsection{A family of soft alignment distances}
-\todo{results of exp\_family\_barycenters: Table~1 protocol with soft-DTW, its divergence, soft-DTW$_\omega$ ($\omega\in\{0.1,1\}$), soft-WDTW and soft-ERP as barycenter surrogates; hard DTW loss on the 10 averaged series and on unseen series of the class}
+The paper uses soft-DTW as a smooth \emph{surrogate} to minimise the hard DTW barycenter loss. We apply the same test to the other members of the family of Section~2: with the protocol, draws and initialisations of Table~\ref{tab:repro}, each surrogate computes a barycenter, which is scored with the hard DTW loss on the 10 averaged series (as in the paper) and on up to 20 unseen series of the same class (held-out), which penalises barycenters that fit the idiosyncrasies of the 10 series.
+
+\begin{table}[h]
+\centering\small
+\caption{Barycenters from different soft surrogates, scored with the hard DTW loss (12 datasets $\times$ 10 draws). Median over datasets of the loss ratio to soft-DTW with $\gamma=0.01$ (lower is better) and average rank among the 11 methods; last column: median computing time relative to soft-DTW $\gamma=0.01$.}
+\label{tab:family}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lcccccccc c}
+\toprule
+& \multicolumn{4}{c}{Random init} & \multicolumn{4}{c}{Euclidean-mean init} & \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+& \multicolumn{2}{c}{train} & \multicolumn{2}{c}{held-out} & \multicolumn{2}{c}{train} & \multicolumn{2}{c}{held-out} & time \\
+Surrogate & ratio & rank & ratio & rank & ratio & rank & ratio & rank & ratio \\
+\midrule
+DBA (hard) & 1.16 & 7.6 & 1.09 & 7.8 & 1.03 & 3.3 & 1.00 & 3.3 & 0.13 \\
+soft-DTW, $\gamma=0.1$ & 0.95 & 3.3 & 0.95 & \textbf{3.5} & 1.06 & 4.8 & 1.03 & 4.8 & 0.79 \\
+soft-DTW, $\gamma=0.01$ & 1 & 4.7 & 1 & 5.4 & 1 & \textbf{1.8} & 1 & \textbf{2.5} & 1 \\
+divergence, $\gamma=0.1$ & 1.13 & 7.9 & 1.08 & 7.5 & 1.26 & 7.6 & 1.14 & 7.5 & 1.32 \\
+divergence, $\gamma=0.01$ & 1.05 & 6.4 & 1.04 & 6.1 & 1.01 & 2.2 & 1.01 & 3.3 & 1.17 \\
+soft-DTW$_\omega$, $\gamma=0.1$, $\omega=0.1$ & \textbf{0.92} & \textbf{3.1} & 0.95 & 3.6 & 1.08 & 5.3 & 1.04 & 5.2 & 0.61 \\
+soft-DTW$_\omega$, $\gamma=0.1$, $\omega=1$ & 1.02 & 5.3 & 0.95 & 4.6 & 1.30 & 7.3 & 1.13 & 7.1 & 0.26 \\
+soft-DTW$_\omega$, $\gamma=0.01$, $\omega=0.1$ & 0.96 & 4.6 & 0.98 & 4.9 & 1.07 & 5.9 & 1.03 & 5.2 & 0.54 \\
+soft-DTW$_\omega$, $\gamma=0.01$, $\omega=1$ & 1.00 & 4.4 & 0.95 & 4.3 & 1.32 & 7.4 & 1.14 & 7.0 & 0.27 \\
+soft-WDTW, $\gamma=0.1$ & 1.40 & 7.8 & 1.28 & 7.3 & 1.59 & 10.0 & 1.33 & 9.8 & 0.22 \\
+soft-ERP, $\gamma=0.1$ & 12.6 & 11.0 & 9.69 & 11.0 & 1.57 & 10.3 & 1.31 & 10.3 & 0.43 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:family} gives a nuanced answer. \emph{From a random start}, a small warping penalty helps: soft-DTW$_\omega$ ($\gamma=0.1$, $\omega=0.1$) reaches the lowest DTW loss (median $8\%$ below soft-DTW $\gamma=0.01$, better on 9 of 12 datasets) while being $1.6\times$ faster, and with $\omega=1$ the train loss is no better but the held-out loss is $5\%$ lower, i.e.\ the penalty limits over-fitting to the averaged series. Penalising warping removes the many degenerate paths from the soft-minimum, which both regularises the barycenter and makes the optimisation cheaper. \emph{From the Euclidean mean}, which is already close to a good solution, plain soft-DTW with small $\gamma$ remains best and the penalty costs $3$--$30\%$: the surrogate that is closest to DTW wins when there is no bad local minimum to escape. The debiased divergence never improves the DTW loss: it only shifts the objective by the self-similarity term $\sdtw(x,x)$, which pulls towards smooth barycenters and away from the DTW optimum. Soft weighted DTW and soft ERP optimise objectives that are too different from DTW and lose everywhere (ERP, which matches points with a zero-valued gap, collapses from a random start). In short, no surrogate dominates: the right amount of smoothing and of warping penalty depends on the starting point, which is the same lesson as for $\gamma$ in Section~4.2.
 
 % ======================================================================
 \section{Conclusion}
