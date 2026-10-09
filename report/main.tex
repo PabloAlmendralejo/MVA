@@ -94,7 +94,7 @@ All series are z-normalised (mean $0$, standard deviation $1$ per series), as pr
 
 \begin{table}[t]
 \centering\small
-\caption{Datasets and diagnosis. Lag: global shift between two series of the same class (cross-correlation), in \% of the length (median / 90th percentile). DTW gain: median share of the within-class Euclidean cost removed by DTW.}
+\caption{Datasets and diagnosis, over 200 random pairs $(x,y)$ of series of the same class. Lag $=\frac{100}{n}\,\big|\arg\max_k \sum_t (x_t-\bar x)(y_{t+k}-\bar y)\big|$: the shift that best superimposes the two series (cross-correlation), in \% of the length $n$; median / 90th percentile over the pairs. DTW gain $=1-\mathrm{dtw}(x,y)/\|x-y\|^2$: the share of their Euclidean distance that is due to misalignment and disappears once they are aligned (median).}
 \label{tab:data}
 \begin{tabular}{lrrrrcc}
 \toprule
