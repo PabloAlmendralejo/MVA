@@ -8,7 +8,10 @@ soft-DTW with a warping penalty omega (kind 'adtw' in the code). All are scored 
     barycenters that fit the idiosyncrasies of the 10 series).
 Draws (class, series, initialisations) are identical to exp_barycenters.py.
 
-Usage:  python exp_family_barycenters.py [n_jobs]  ->  results/family_barycenters.csv
+Usage:  python exp_family_barycenters.py [n_jobs]          ->  results/family_barycenters.csv
+        python exp_family_barycenters.py [n_jobs] extra    ->  results/family_barycenters_extra.csv
+The 'extra' run adds soft-DTW_omega with gamma = 1 and 0.001 (Table 2 of the
+report) on the same draws; DBA is not recomputed (identical draws and init).
 """
 
 import os
@@ -37,10 +40,17 @@ CONFIGS = [
     ("soft-DTW_omega", "adtw", 0.01, 0.1),
     ("soft-DTW_omega", "adtw", 0.01, 1.0),
 ]
+EXTRA_CONFIGS = [
+    ("soft-DTW_omega", "adtw", 1.0, 0.1),
+    ("soft-DTW_omega", "adtw", 1.0, 1.0),
+    ("soft-DTW_omega", "adtw", 0.001, 0.1),
+    ("soft-DTW_omega", "adtw", 0.001, 1.0),
+]
 
 
-def run_dataset(name, seed=0):
-    part = f"results/family_barycenters_parts/{name}.csv"
+def run_dataset(name, seed=0, extra=False):
+    configs = EXTRA_CONFIGS if extra else CONFIGS
+    part = f"results/family_barycenters{'_extra' if extra else ''}_parts/{name}.csv"
     if os.path.exists(part):
         return pd.read_csv(part).to_dict("records")
     warnings.filterwarnings("ignore")
@@ -57,12 +67,12 @@ def run_dataset(name, seed=0):
         held = np.random.default_rng(1000 + rep).choice(rest, min(N_HELDOUT, len(rest)), replace=False)
         Yh = [X[i] for i in held]
         for init_name, init in inits.items():
-            runs = [("DBA", None, np.nan, np.nan,
-                     lambda: dba_barycenter(Y, init, max_iter=MAX_ITER))]
+            runs = [] if extra else [("DBA", None, np.nan, np.nan,
+                                      lambda: dba_barycenter(Y, init, max_iter=MAX_ITER))]
             runs += [(label, kind, gamma, omega,
                       lambda kind=kind, gamma=gamma, omega=omega: family_barycenter(
                           Y, kind, gamma, init, omega=omega, max_iter=MAX_ITER))
-                     for label, kind, gamma, omega in CONFIGS]
+                     for label, kind, gamma, omega in configs]
             for label, kind, gamma, omega, fn in runs:
                 t0 = time.perf_counter()
                 xb = fn()
@@ -78,7 +88,8 @@ def run_dataset(name, seed=0):
 
 if __name__ == "__main__":
     n_jobs = int(sys.argv[1]) if len(sys.argv) > 1 else 7
-    out = Parallel(n_jobs=n_jobs, verbose=10)(delayed(run_dataset)(d) for d in DATASETS)
+    extra = len(sys.argv) > 2 and sys.argv[2] == "extra"
+    out = Parallel(n_jobs=n_jobs, verbose=10)(delayed(run_dataset)(d, extra=extra) for d in DATASETS)
     df = pd.DataFrame([r for rows in out for r in rows])
-    df.to_csv("results/family_barycenters.csv", index=False)
+    df.to_csv(f"results/family_barycenters{'_extra' if extra else ''}.csv", index=False)
     print(df.groupby(["init", "method", "gamma", "omega"], dropna=False)[["train_loss", "heldout_loss"]].mean())

@@ -130,7 +130,7 @@ Forward and backward passes are compiled with Numba, with the soft-minimum compu
 \label{fig:E}
 \end{figure}
 
-\subsection{Barycenters and $k$-means (Tables 1--2 of the paper)}
+\subsection{Barycenters and $k$-means}
 Protocol as in the paper: for each dataset, 10 random draws of 10 series of one class; barycenters from the same initialisation (random $\mathcal N(0,1)$ or Euclidean mean) with at most 100 iterations; soft-DTW with L-BFGS, DBA~\cite{petitjean2011global} (\texttt{tslearn}) and a batch subgradient method with backtracking line search~\cite{schultz2018nonsmooth}. All methods are scored with the \emph{hard} DTW objective (Eq.~4 with $\gamma=0$), which is the objective DBA itself minimises. $k$-means uses $k$ = number of classes, at most 30 Lloyd and 100 barycenter iterations, training sets capped at 100 series, 3 random initialisations (random series) and a Euclidean $k$-means initialisation.
 
 \begin{table}[t]
@@ -149,8 +149,8 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 & vs subgrad., Euclidean init & 17 (35) & 75 (72) & 92 (92) & 100 (97) \\
 \midrule
 \multirow{2}{*}{\shortstack[l]{Ours: soft-DTW$_\omega$\\$\omega=0.1$ / $\omega=1$}}
-& vs DBA, random init & -- & 83 / 58 & 83 / 58 & -- \\
-& vs DBA, Euclidean init & -- & 17 / 8 & 8 / 8 & -- \\
+& vs DBA, random init & 58 / 58 & 83 / 58 & 83 / 58 & 83 / 58 \\
+& vs DBA, Euclidean init & 8 / 8 & 17 / 8 & 8 / 8 & 8 / 8 \\
 \midrule
 \multirow{4}{*}{$k$-means}
 & vs DBA, random init & 10 (16) & 50 (25) & 70 (60) & 90 (77) \\
@@ -163,8 +163,8 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 Table~\ref{tab:repro} reproduces the paper's benchmark for barycenters and $k$-means and also adds soft-DTW$_\omega$ to the comparison. For soft-DTW we obtain results similar to the paper's: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. For barycenters with a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). For $k$-means the gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). As for the cost, with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters and centroids, as in the paper's qualitative figures, which we reproduce in the appendix (Figs.~\ref{fig:bary}--\ref{fig:kmeans}), but losses up to $3\times$ that of DBA, mainly because smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size, which inflates the win rates against it.
 
-\subsection{Nearest-centroid classification (Fig.~7 of the paper)}
-Following the paper, data are pooled and split 50/25/25 (3 random stratified splits) and $\gamma$ is selected on validation among 15 log-spaced values in $[10^{-3},10]$. Soft-DTW centroids are at least as accurate as DBA centroids on 83\% of the datasets (paper: 75\%), with mean accuracy $0.86$ vs $0.81$. Two baselines the paper does not report put this in context: Euclidean centroids reach $0.77$, but \textbf{1-NN DTW reaches $0.93$} and is better than soft-DTW centroids on 9 of 12 datasets. Nearest centroids trade accuracy for a much smaller model and faster prediction. Moreover, the selected $\gamma$ is unstable: on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected, i.e.\ there is no reliable default for $\gamma$.
+\subsection{Nearest-centroid classification}
+Following the paper, data are pooled and split 50/25/25 and $\gamma$ is selected on validation among 15 log-spaced values in $[10^{-3},10]$. Soft-DTW centroids are at least as accurate as DBA centroids on 83\% of the datasets (paper: 75\%), with mean accuracy $0.86$ vs $0.81$. Euclidean centroids reach $0.77$, but 1-NN DTW reaches $0.93$ and is better than soft-DTW centroids on 9 of 12 datasets. Nearest centroids trade accuracy for a much smaller model and faster prediction. Moreover, the selected $\gamma$ is unstable, on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected.
 
 \subsection{Multistep-ahead forecasting (Table 3 of the paper)}
 As in the paper, the first 60\% of each series is the input and the remaining 40\% the target; a one-hidden-layer MLP (256 sigmoid units, Adam, $400$ full-batch epochs, hyper-parameters not given in the paper) is trained with the Euclidean loss or with soft-DTW, from random weights or from the Euclidean-trained network, on 13 datasets.
