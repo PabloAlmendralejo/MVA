@@ -13,7 +13,7 @@
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \providecommand{\R}{\mathbb{R}}
 \newcommand{\sdtw}{\mathrm{dtw}_\gamma}
-\newcommand{\minop}{\mathrm{min}^\gamma}
+\newcommand{\minop}{\mathop{\mathrm{min}^\gamma}}
 
 \title{Mini-Project (ML for Time Series) -- Soft-DTW: a Differentiable Loss Function for Time-Series -- MVA 2026/2027}
 \author{Pablo Borrego \email{pabloalmendralejo@gmail.com} \\ \todo{second student, if any}}
@@ -39,16 +39,25 @@ A time series can be defined as a matrix of the form $x=(x_1,\dots,x_n)\in\R^{n\
 % ======================================================================
 \section{Method}
 
-\paragraph{DTW and soft-DTW.}
-Let $x\in\R^{n\times p}$, $y\in\R^{m\times p}$ be two time series and $\Delta(x,y)=[\|x_i-y_j\|^2]_{ij}\in\R^{n\times m}$ their cost matrix. An alignment is a binary matrix $A\in\mathcal A_{n,m}$ encoding a path from $(1,1)$ to $(n,m)$ made of $\downarrow$ ($x$ advances, $y_j$ is repeated), $\rightarrow$ ($y$ advances) and $\searrow$ (both advance) steps; $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach to compute the minimum over all alignments. With the soft-minimum $\minop(a_1,\dots,a_k)=-\gamma\log\sum_i e^{-a_i/\gamma}$ ($\min$ when $\gamma=0$),
+\paragraph{DTW.}
+Let $x\in\R^{n\times p}$ and $y\in\R^{m\times p}$ be two time series. Matching $x_i$ with $y_j$ costs $\delta_{i,j}=\|x_i-y_j\|^2$, and these costs form the matrix $\Delta(x,y)=[\delta_{i,j}]_{i,j}\in\R^{n\times m}$. An \emph{alignment} is a path in this matrix from cell $(1,1)$ to cell $(n,m)$ made of three kinds of steps: $\searrow$ (both series advance), $\downarrow$ ($x$ advances while $y$ stays at the same point $y_j$) and $\rightarrow$ ($y$ advances while $x$ stays at $x_i$). We encode it as a binary matrix $A\in\{0,1\}^{n\times m}$, with $A_{i,j}=1$ if the path visits cell $(i,j)$, and write $\mathcal A_{n,m}$ for the set of all alignments. The cost of an alignment is the sum of the costs of the cells it visits, $\langle A,\Delta\rangle=\sum_{i,j}A_{i,j}\,\delta_{i,j}$, and DTW is the cost of the cheapest one:
 \begin{equation}
-\mathrm{dtw}(x,y)=\min_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle,\qquad
-\sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta\rangle .
+\mathrm{dtw}(x,y)=\min_{A\in\mathcal A_{n,m}}\langle A,\Delta(x,y)\rangle .
 \end{equation}
-Because $\minop$ is a log-sum-exp, $\sdtw$ is smooth (infinitely differentiable) in $\Delta$, hence in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
+
+\paragraph{Soft-DTW.}
+Soft-DTW replaces this minimum by the \emph{soft-minimum} with smoothing parameter $\gamma>0$,
+\begin{equation}
+\minop(a_1,\dots,a_k)=-\gamma\log\sum_{l=1}^{k}e^{-a_l/\gamma}.
+\end{equation}
+It tends to $\min(a_1,\dots,a_k)$ as $\gamma\to0$ (we write $\min^{0}=\min$), but unlike the minimum it is a smooth function of its arguments: its derivative with respect to $a_l$ is the softmax weight $e^{-a_l/\gamma}/\sum_{l'}e^{-a_{l'}/\gamma}\in(0,1)$, so the smallest values weigh most but all of them contribute. Soft-DTW is the soft-minimum of the costs of all alignments:
+\begin{equation}
+\sdtw(x,y)=\minop_{A\in\mathcal A_{n,m}}\langle A,\Delta(x,y)\rangle=-\gamma\log\sum_{A\in\mathcal A_{n,m}}e^{-\langle A,\Delta(x,y)\rangle/\gamma}.
+\end{equation}
+It is therefore smooth (infinitely differentiable) in $\Delta$, hence in $x$, whereas $\mathrm{dtw}$ has kinks wherever the optimal path changes. Two facts used later: $\mathrm{dtw}-\gamma\log|\mathcal A_{n,m}|\le\sdtw\le\mathrm{dtw}$, so $\sdtw\to\mathrm{dtw}$ as $\gamma\to0$; and $\sdtw(x,x)<0$, i.e.\ soft-DTW is not a divergence~\cite{blondel2021differentiable}.
 
 \paragraph{Forward pass (Algorithm 1).}
-Both quantities are computed by Bellman's recursion, $r_{0,0}=0$, $r_{i,0}=r_{0,j}=+\infty$,
+Neither quantity can be computed by listing the alignments: $|\mathcal A_{n,m}|$ is a Delannoy number, which grows exponentially with $n$ and $m$; therefore, we need a dynamic programming approach. Both are computed by Bellman's recursion: with $r_{0,0}=0$ and $r_{i,0}=r_{0,j}=+\infty$,
 \begin{equation}
 r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(x,y)=r_{n,m},
 \end{equation}
