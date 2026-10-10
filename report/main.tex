@@ -33,7 +33,7 @@ A time series can be defined as a matrix of the form $x=(x_1,\dots,x_n)\in\R^{n\
 \paragraph{Contributions and work repartition.}
 \textbf{Implementation:} we implemented soft-DTW from scratch (forward and backward recursions in Numba, a PyTorch loss with the hand-written backward, and an anti-diagonal PyTorch version that runs on GPU). \texttt{tslearn}~\cite{tavenard2020tslearn} is only used to load the UCR data, as the DBA baseline and as a numerical cross-check.
 \textbf{Reproduction:} we reproduce, on 10--13 UCR datasets, the paper's barycenter (Table 1), $k$-means (Table 2), nearest-centroid (Fig.~7) and forecasting (Table 3) experiments.
-\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits, and add the baselines it does not compare to (Euclidean nearest centroid, 1-NN DTW); (ii) we propose soft-DTW with a warping penalty, which charges a cost $\omega$ for every time-stretching step (a soft version of amerced DTW~\cite{herrmann2023amercing}, computed as a soft dynamic program with step costs~\cite{mensch2018differentiable}); (iii) following the paper's own protocol, we use it as a surrogate to compute DTW barycenters and compare them under the hard DTW loss, both on the averaged series and on unseen series of the same class.
+\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits,; (ii) we propose soft-DTW with a warping penalty, which charges a cost $\omega$ for every time-stretching step (a soft version of amerced DTW~\cite{herrmann2023amercing}, computed as a soft dynamic program with step costs~\cite{mensch2018differentiable}); (iii) following the paper's own protocol, we use it as a surrogate to compute DTW barycenters and compare them under the hard DTW loss, both on the averaged series and on unseen series of the same class.
 \textbf{Work repartition:} \todo{Discutir con Pol}.
 
 % ======================================================================
@@ -135,7 +135,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 \begin{table}[t]
 \centering\small
-\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Middle block: our soft-DTW$_\omega$ (Section~4.5) on the same draws, against the same DBA and subgradient barycenters.}
+\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Blocks ``Ours'': soft-DTW$_\omega$ (Section~4.5) on the same draws and initialisations, against the same DBA and subgradient results.}
 \label{tab:repro}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
@@ -159,6 +159,12 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 & vs DBA, Euclidean init & 10 (29) & 10 (24) & 60 (55) & 90 (69) \\
 & vs subgrad., random init & 20 (42) & 60 (58) & 100 (76) & 90 (96) \\
 & vs subgrad., Euclidean init & 10 (46) & 10 (50) & 90 (66) & 100 (84) \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{Ours: soft-DTW$_\omega$\\$k$-means, $\omega=0.1$ / $1$}}
+& vs DBA, random init & 10 / 10 & 40 / 10 & 40 / 20 & 40 / 20 \\
+& vs DBA, Euclidean init & 10 / 0 & 10 / 0 & 10 / 0 & 20 / 0 \\
+& vs subgrad., random init & 20 / 20 & 70 / 30 & 60 / 30 & 60 / 30 \\
+& vs subgrad., Euclidean init & 10 / 0 & 20 / 0 & 10 / 0 & 20 / 0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -171,8 +177,6 @@ We can also use the barycenter to classify series. Each class is represented by 
 As in the paper, we merge the train and test sets of each dataset and split them randomly into train (50\%), validation (25\%) and test (25\%), three times. Centroids are computed on the train part, starting from the Euclidean mean of each class. Each method uses its own distance to find the closest centroid: hard DTW for DBA, $\sdtw$ for soft-DTW and soft-DTW$_\omega$ for soft-DTW$_\omega$. The parameters $\gamma$ (15 values between $10^{-3}$ and $10$) and $\omega\in\{0.1,1\}$ are chosen on the validation part.
 
 The key insight is that soft-DTW centroids classify better than DBA centroids: they are at least as accurate on 83\% of the datasets (paper: 75\%). Soft-DTW$_\omega$ does not improve on soft-DTW: it is better on 6 datasets and worse on 4.
-
-To put these numbers in context we add two baselines that the paper does not report: Euclidean centroids (class mean and Euclidean distance) reach $0.77$, while 1-NN DTW (each test series takes the class of its closest training series under DTW) reaches $0.93$ and beats soft-DTW centroids on 9 of 12 datasets. Nearest centroids are thus less accurate, but much smaller (one series per class instead of the whole training set) and faster at prediction. Moreover, the selected $\gamma$ is unstable: on CBF it ranges from $0.002$ to $0.19$ across splits, and on ECGFiveDays the largest value $\gamma=10$ is always selected.
 
 \subsection{Multistep-ahead forecasting (Table 3 of the paper)}
 As in the paper, the first 60\% of each series is the input and the remaining 40\% the target; a one-hidden-layer MLP (256 sigmoid units, Adam, $400$ full-batch epochs, hyper-parameters not given in the paper) is trained with the Euclidean loss or with soft-DTW, from random weights or from the Euclidean-trained network, on 13 datasets.
@@ -265,7 +269,7 @@ Here the penalty pays off clearly (Table~\ref{tab:forecast_omega}). Trained from
 
 % ======================================================================
 \section{Conclusion}
-We re-implemented soft-DTW from scratch, verified it against exhaustive enumeration of alignments, and reproduced the paper's barycenter, $k$-means and nearest-centroid results on 10--12 UCR datasets: the main claims hold, as do the trends in $\gamma$. Measuring magnitudes, costs and simple baselines shows their limits: large gains over DBA only from poor initialisations, a 10--15$\times$ computational overhead for the small $\gamma$ that win, nearest centroids well below 1-NN DTW, and no stable choice of $\gamma$. In forecasting, the free warping of soft-DTW leads to unstable training and degenerate predictions that DTW itself scores well. Charging a penalty $\omega$ for each time-stretching step fixes these failures and gives a controllable trade-off between shape and timing; as a barycenter surrogate it helps from poor initialisations, but not from a good one.
+We re-implemented soft-DTW from scratch, verified it against exhaustive enumeration of alignments, and reproduced the paper's barycenter, $k$-means and nearest-centroid results on 10--12 UCR datasets: the main claims hold, as do the trends in $\gamma$. Measuring magnitudes and costs shows their limits: large gains over DBA only from poor initialisations, and a 10--15$\times$ computational overhead for the small $\gamma$ that win. In forecasting, the free warping of soft-DTW leads to unstable training and degenerate predictions that DTW itself scores well. Charging a penalty $\omega$ for each time-stretching step fixes these failures and gives a controllable trade-off between shape and timing; as a barycenter surrogate it helps from poor initialisations, but not from a good one.
 
 
 \bibliographystyle{plain}

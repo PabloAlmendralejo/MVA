@@ -1,0 +1,9 @@
+dataset,init,seed,method,gamma,omega,energy,time
+GunPoint,euclidean,0,soft-DTW_omega,1.0,0.1,0.94649260054309,3.4745312000159174
+GunPoint,euclidean,0,soft-DTW_omega,1.0,1.0,0.9511790110175955,2.925355799961835
+GunPoint,euclidean,0,soft-DTW_omega,0.1,0.1,0.7943313741162495,3.0960916999611072
+GunPoint,euclidean,0,soft-DTW_omega,0.1,1.0,0.9412746200872975,1.8444273000350222
+GunPoint,euclidean,0,soft-DTW_omega,0.01,0.1,0.807299951813864,3.990967899968382
+GunPoint,euclidean,0,soft-DTW_omega,0.01,1.0,0.8661586743033873,2.2101139000151306
+GunPoint,euclidean,0,soft-DTW_omega,0.001,0.1,0.7925765149458184,4.864051699987613
+GunPoint,euclidean,0,soft-DTW_omega,0.001,1.0,0.8576207781949237,4.261829000024591
