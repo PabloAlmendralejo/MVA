@@ -1,4 +1,4 @@
-# Soft-DTW mini-project (MVA — ML for Time Series)
+# Soft-DTW project
 
 Re-implementation and analysis of Cuturi & Blondel, *Soft-DTW: a Differentiable Loss Function for Time-Series* (ICML 2017), plus an extension to a family of soft alignment distances.
 
