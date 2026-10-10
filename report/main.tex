@@ -135,7 +135,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 \begin{table}[t]
 \centering\small
-\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Blocks ``Ours'': soft-DTW$_\omega$ on the same draws and initialisations, against the same DBA and subgradient results.}
+\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Blocks soft-DTW$_\omega$: results on the same draws and initialisations, against the same DBA and subgradient results.}
 \label{tab:repro}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
@@ -148,7 +148,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 & vs subgrad., random init & 75 (96) & 100 (97) & 100 (97) & 100 (97) \\
 & vs subgrad., Euclidean init & 17 (35) & 75 (72) & 92 (92) & 100 (97) \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{Ours: soft-DTW$_\omega$\\$\omega=0.1$ / $\omega=1$}}
+\multirow{4}{*}{\shortstack[l]{soft-DTW$_\omega$\\$\omega=0.1$ / $\omega=1$}}
 & vs DBA, random init & 58 / 58 & 83 / 58 & 83 / 58 & 83 / 58 \\
 & vs DBA, Euclidean init & 8 / 8 & 17 / 8 & 8 / 8 & 8 / 8 \\
 & vs subgrad., random init & 75 / 83 & 100 / 100 & 100 / 100 & 100 / 100 \\
@@ -160,7 +160,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 & vs subgrad., random init & 20 (42) & 60 (58) & 100 (76) & 90 (96) \\
 & vs subgrad., Euclidean init & 10 (46) & 10 (50) & 90 (66) & 100 (84) \\
 \midrule
-\multirow{4}{*}{\shortstack[l]{Ours: soft-DTW$_\omega$\\$k$-means, $\omega=0.1$ / $1$}}
+\multirow{4}{*}{\shortstack[l]{soft-DTW$_\omega$\\$k$-means, $\omega=0.1$ / $1$}}
 & vs DBA, random init & 10 / 10 & 40 / 10 & 40 / 20 & 40 / 20 \\
 & vs DBA, Euclidean init & 10 / 0 & 10 / 0 & 10 / 0 & 20 / 0 \\
 & vs subgrad., random init & 20 / 20 & 70 / 30 & 60 / 30 & 60 / 30 \\
@@ -171,7 +171,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 Table~\ref{tab:repro} reproduces the paper's benchmark for barycenters and $k$-means and also adds soft-DTW$_\omega$ to the comparison. For soft-DTW we obtain results similar to the paper's: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. For barycenters with a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). For $k$-means the gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). As for the cost, with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters and centroids, as in the paper's qualitative figures, which we reproduce in the appendix (Figs.~\ref{fig:bary}--\ref{fig:kmeans}), but losses up to $3\times$ that of DBA, mainly because smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size, which inflates the win rates against it.
 
-Our soft-DTW$_\omega$ (blocks ``Ours'') outperforms soft-DTW from a random start: with $\gamma=\omega=0.1$ its barycenters have an $8\%$ lower DTW loss than soft-DTW ($\gamma=0.01$) and are computed $1.6\times$ faster, since the penalty removes many degenerate paths from the soft-minimum. It beats DBA on fewer datasets than soft-DTW, but by more where DBA is trapped (down to $0.21\times$ its loss). From the Euclidean mean and in $k$-means, plain soft-DTW remains best. Decreasing $\gamma$ brings soft-DTW closer to the DTW loss used for scoring, so its win rate against DBA rises to 100\%; soft-DTW$_\omega$ instead gets closer to DTW plus a warping penalty, a different objective, so its win rate does not improve.
+Our soft-DTW$_\omega$ outperforms soft-DTW from a random start: with $\gamma=\omega=0.1$ its barycenters have an $8\%$ lower DTW loss than soft-DTW ($\gamma=0.01$) and are computed $1.6\times$ faster, since the penalty removes many degenerate paths from the soft-minimum. It beats DBA on fewer datasets than soft-DTW, but by more where DBA is trapped (down to $0.21\times$ its loss). From the Euclidean mean and in $k$-means, plain soft-DTW remains best. Decreasing $\gamma$ brings soft-DTW closer to the DTW loss used for scoring, so its win rate against DBA rises to 100\%; soft-DTW$_\omega$ instead gets closer to DTW plus a warping penalty, a different objective, so its win rate does not improve.
 
 \subsection{Nearest-centroid classification}
 We can also use the barycenter to classify series. Each class is represented by the barycenter of its training series (its centroid), and every new series is given the class of the closest centroid. The paper uses this to compare soft-DTW and DBA barycenters; we add soft-DTW$_\omega$.
@@ -187,7 +187,7 @@ Once trained, each network forecasts the test series, and we measure the error o
 
 \begin{table}[h]
 \centering\small
-\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses. Rows ``ours'': rank of soft-DTW$_\omega$ ($\omega=0.1$ / $\omega=1$) when it replaces soft-DTW with the same $\gamma$.}
+\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses. Rows soft-DTW$_\omega$: its rank ($\omega=0.1$ / $\omega=1$) when it replaces soft-DTW with the same $\gamma$.}
 \label{tab:forecast}
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{lllccccc}
@@ -195,14 +195,14 @@ Once trained, each network forecasts the test series, and we measure the error o
 Test metric & Init & & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
 \midrule
 \multirow{4}{*}{DTW} & \multirow{2}{*}{random} & soft-DTW & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & 2.23 (2.79) & 2.85 (1.87) \\
-& & ours & & 3.92 / 3.92 & 2.15 / 3.00 & 2.08 / 3.31 & 2.08 / 3.38 \\
+& & soft-DTW$_\omega$ & & 3.92 / 3.92 & 2.15 / 3.00 & 2.08 / 3.31 & 2.08 / 3.38 \\
 & \multirow{2}{*}{Euclidean} & soft-DTW & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & 1.69 (1.29) \\
-& & ours & & 4.46 / 4.08 & 2.46 / 3.15 & 2.38 / 2.92 & 2.46 / 2.92 \\
+& & soft-DTW$_\omega$ & & 4.46 / 4.08 & 2.46 / 3.15 & 2.38 / 2.92 & 2.46 / 2.92 \\
 \midrule
 \multirow{4}{*}{Euclidean} & \multirow{2}{*}{random} & soft-DTW & 1.31 (1.05) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
-& & ours & & 1.69 / 1.77 & 3.31 / 2.00 & 3.15 / 1.92 & 3.23 / 1.85 \\
+& & soft-DTW$_\omega$ & & 1.69 / 1.77 & 3.31 / 2.00 & 3.15 / 1.92 & 3.23 / 1.85 \\
 & \multirow{2}{*}{Euclidean} & soft-DTW & 2.77 (1.70) & 1.62 (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
-& & ours & & 1.62 / 1.69 & 2.23 / 2.38 & 2.77 / 2.38 & 2.62 / 2.23 \\
+& & soft-DTW$_\omega$ & & 1.62 / 1.69 & 2.23 / 2.38 & 2.77 / 2.38 & 2.62 / 2.23 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -220,7 +220,7 @@ Beyond these differences, Fig.~\ref{fig:forecast} shows a more serious failure. 
 \label{fig:forecast}
 \end{figure}
 
-The rows ``ours'' of Table~\ref{tab:forecast} show the effect of this penalty. From random weights, a small penalty ($\omega=0.1$) is almost free: it improves the DTW rank of soft-DTW for every $\gamma\le0.1$, and for $\gamma\le0.01$ it also lowers the Euclidean error by $30\%$. A larger penalty ($\omega=1$) loses $6$--$9\%$ in DTW but divides the Euclidean error by $2$ to $3$, on all 13 datasets, which brings its Euclidean rank close to that of the Euclidean network. The penalty also removes the failures described above: on ShapesAll the flat line with spikes disappears (Fig.~\ref{fig:forecast}), and with $\gamma=0.001$ the unstable runs are fixed (test DTW $1.44\to0.44$ on Coffee and $0.69\to0.35$ on Plane, $\omega=1$). From the Euclidean network, which already avoids these failures, the effect is small. As for barycenters, the penalty helps most from a poor starting point, and $\omega$ sets the trade-off between the shape and the timing of the forecast.
+The soft-DTW$_\omega$ rows of Table~\ref{tab:forecast} show the effect of this penalty. From random weights, a small penalty ($\omega=0.1$) is almost free: it improves the DTW rank of soft-DTW for every $\gamma\le0.1$, and for $\gamma\le0.01$ it also lowers the Euclidean error by $30\%$. A larger penalty ($\omega=1$) loses $6$--$9\%$ in DTW but divides the Euclidean error by $2$ to $3$, on all 13 datasets, which brings its Euclidean rank close to that of the Euclidean network. The penalty also removes the failures described above: on ShapesAll the flat line with spikes disappears (Fig.~\ref{fig:forecast}), and with $\gamma=0.001$ the unstable runs are fixed (test DTW $1.44\to0.44$ on Coffee and $0.69\to0.35$ on Plane, $\omega=1$). From the Euclidean network, which already avoids these failures, the effect is small. As for barycenters, the penalty helps most from a poor starting point, and $\omega$ sets the trade-off between the shape and the timing of the forecast.
 
 % ======================================================================
 \section{Conclusion}
