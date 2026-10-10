@@ -2,8 +2,6 @@
 
 Re-implementation and analysis of Cuturi & Blondel, *Soft-DTW: a Differentiable Loss Function for Time-Series* (ICML 2017), plus an extension: soft-DTW with a warping penalty ω on time-stretching steps (soft-DTW_ω).
 
-Pablo Borrego, Pol Tibau.
-
 ## Contents
 ```
 notebook.ipynb        main notebook: method and verification, data diagnosis,
@@ -28,7 +26,7 @@ figures/              figures of the report
 ```
 
 ## Experiments
-Run them from the project root, e.g. `python -m experiments.exp_kmeans`. Each script writes a CSV in `results/` and checkpoints every job in `results/*_parts/`, so an interrupted run resumes where it stopped. They take from minutes to hours on a laptop; the notebook only reads their results.
+Run them from the project root, e.g. `python -m experiments.exp_kmeans`. Each script writes a CSV in `results/` and checkpoints every job in `results/*_parts/`, so an interrupted run resumes where it stopped.
 
 | Experiment (paper) | soft-DTW, DBA, subgradient | soft-DTW_ω |
 |---|---|---|
