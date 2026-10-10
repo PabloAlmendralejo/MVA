@@ -187,22 +187,22 @@ Once trained, each network forecasts the test series, and we measure the error o
 
 \begin{table}[h]
 \centering\small
-\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses. Rows soft-DTW$_\omega$: its rank ($\omega=0.1$ / $\omega=1$) when it replaces soft-DTW with the same $\gamma$.}
+\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses. Rows soft-DTW$_\omega$: rank of soft-DTW$_\omega$ with $\omega=0.1$ (left of the slash) and $\omega=1$ (right) when it replaces soft-DTW with the same $\gamma$.}
 \label{tab:forecast}
-\setlength{\tabcolsep}{3pt}
+\setlength{\tabcolsep}{2.6pt}
 \begin{tabular}{lllccccc}
 \toprule
-Test metric & Init & & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
+Metric & Init & & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
 \midrule
 \multirow{4}{*}{DTW} & \multirow{2}{*}{random} & soft-DTW & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & 2.23 (2.79) & 2.85 (1.87) \\
-& & soft-DTW$_\omega$ & & 3.92 / 3.92 & 2.15 / 3.00 & 2.08 / 3.31 & 2.08 / 3.38 \\
+& & soft-DTW$_\omega$ ($\omega=0.1$ / $1$) & & 3.92 / 3.92 & 2.15 / 3.00 & 2.08 / 3.31 & 2.08 / 3.38 \\
 & \multirow{2}{*}{Euclidean} & soft-DTW & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & 1.69 (1.29) \\
-& & soft-DTW$_\omega$ & & 4.46 / 4.08 & 2.46 / 3.15 & 2.38 / 2.92 & 2.46 / 2.92 \\
+& & soft-DTW$_\omega$ ($\omega=0.1$ / $1$) & & 4.46 / 4.08 & 2.46 / 3.15 & 2.38 / 2.92 & 2.46 / 2.92 \\
 \midrule
 \multirow{4}{*}{Euclidean} & \multirow{2}{*}{random} & soft-DTW & 1.31 (1.05) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
-& & soft-DTW$_\omega$ & & 1.69 / 1.77 & 3.31 / 2.00 & 3.15 / 1.92 & 3.23 / 1.85 \\
+& & soft-DTW$_\omega$ ($\omega=0.1$ / $1$) & & 1.69 / 1.77 & 3.31 / 2.00 & 3.15 / 1.92 & 3.23 / 1.85 \\
 & \multirow{2}{*}{Euclidean} & soft-DTW & 2.77 (1.70) & 1.62 (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
-& & soft-DTW$_\omega$ & & 1.62 / 1.69 & 2.23 / 2.38 & 2.77 / 2.38 & 2.62 / 2.23 \\
+& & soft-DTW$_\omega$ ($\omega=0.1$ / $1$) & & 1.62 / 1.69 & 2.23 / 2.38 & 2.77 / 2.38 & 2.62 / 2.23 \\
 \bottomrule
 \end{tabular}
 \end{table}
