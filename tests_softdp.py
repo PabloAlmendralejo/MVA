@@ -112,25 +112,25 @@ def test_hard_forward_equals_min_over_paths():
 
 @pytest.mark.parametrize("kind,params", KINDS)
 def test_barycenter_objective_gradient(kind, params):
-    from family import family_objective
+    from omega import barycenter_objective
     Y = [rng.normal(size=(6, 1)), rng.normal(size=(8, 1)), rng.normal(size=(7, 1))]
     z = rng.normal(size=(5, 1))
     kw = dict(omega=params.get("omega", 0.0))
-    _, grad = family_objective(z, Y, kind, 0.3, **kw)
+    _, grad = barycenter_objective(z, Y, kind, 0.3, **kw)
     eps, fd = 1e-6, np.zeros_like(z)
     for idx in np.ndindex(*z.shape):
         zp, zm = z.copy(), z.copy()
         zp[idx] += eps
         zm[idx] -= eps
-        fd[idx] = (family_objective(zp, Y, kind, 0.3, **kw)[0] - family_objective(zm, Y, kind, 0.3, **kw)[0]) / (2 * eps)
+        fd[idx] = (barycenter_objective(zp, Y, kind, 0.3, **kw)[0] - barycenter_objective(zm, Y, kind, 0.3, **kw)[0]) / (2 * eps)
     assert np.allclose(grad, fd, rtol=1e-5, atol=1e-7)
 
 
-def test_family_barycenter_dtw_matches_softdtw_barycenter():
+def test_soft_barycenter_dtw_matches_softdtw_barycenter():
     from barycenter import softdtw_barycenter
-    from family import family_barycenter
+    from omega import soft_barycenter
     Y = [rng.normal(size=(12, 1)) for _ in range(4)]
     init = rng.normal(size=(12, 1))
-    a = family_barycenter(Y, "dtw", 0.1, init)
+    a = soft_barycenter(Y, "dtw", 0.1, init)
     b = softdtw_barycenter(Y, 0.1, init)
     assert np.allclose(a, b, atol=1e-6)

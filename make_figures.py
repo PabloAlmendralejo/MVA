@@ -21,7 +21,7 @@ import numpy as np
 
 from barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
 from clustering import dtw_kmeans
-from family import family_barycenter
+from omega import soft_barycenter
 from softdp import edge_costs, soft_dp
 
 warnings.filterwarnings("ignore")
@@ -42,7 +42,7 @@ def barycenters_figure():
     methods = {"soft-DTW, $\\gamma=1$": lambda: softdtw_barycenter(Y, 1.0, init),
                "soft-DTW, $\\gamma=0.01$": lambda: softdtw_barycenter(Y, 0.01, init),
                "soft-DTW$_\\omega$, $\\gamma=\\omega=0.1$":
-                   lambda: family_barycenter(Y, "adtw", 0.1, init, omega=0.1).reshape(init.shape),
+                   lambda: soft_barycenter(Y, "adtw", 0.1, init, omega=0.1).reshape(init.shape),
                "DBA": lambda: dba_barycenter(Y, init),
                "subgradient": lambda: subgradient_barycenter(Y, init)}
     fig, axes = plt.subplots(1, 5, figsize=(14, 2.4), sharey=True)
@@ -70,7 +70,7 @@ def interpolation_figure():
             elif title.startswith("soft-DTW,"):
                 z = softdtw_barycenter([a, b], 1.0, w * a + (1 - w) * b, weights=[w, 1 - w])
             else:
-                z = family_barycenter([a, b], "adtw", 1.0, w * a + (1 - w) * b, omega=1.0,
+                z = soft_barycenter([a, b], "adtw", 1.0, w * a + (1 - w) * b, omega=1.0,
                                       weights=[w, 1 - w]).reshape(a.shape)
             ax.plot(z[:, 0], color="0.3", lw=1, ls="--")
         ax.set_title(title)
@@ -118,7 +118,27 @@ def prior_figure():
     plt.close()
 
 
+def forecast_figure(examples=(("ShapesAll", 0), ("Coffee", 3), ("CBF", 1))):
+    z = np.load("results/forecast_omega_examples.npz")
+    fig, axes = plt.subplots(1, len(examples), figsize=(10, 2.4))
+    for ax, (name, k) in zip(axes, examples):
+        inp, truth = z[f"{name}/input"][k], z[f"{name}/truth"][k]
+        t = np.arange(len(inp) + len(truth))
+        ax.plot(t[:len(inp)], inp, color="k", lw=1, label="input")
+        ax.plot(t[len(inp):], truth, color="k", lw=1, ls="--", label="ground truth")
+        ax.plot(t[len(inp):], z[f"{name}/soft-DTW"][k], color="C3", lw=1.2, label="soft-DTW")
+        ax.plot(t[len(inp):], z[f"{name}/soft-DTW_omega 1"][k], color="C2", lw=1.2,
+                label="soft-DTW$_\\omega$ ($\\omega=1$)")
+        ax.set_title(name)
+        ax.set_xticks([])
+    fig.legend(*axes[0].get_legend_handles_labels(), loc="lower center", ncol=4, fontsize=8,
+               frameon=False)
+    plt.tight_layout(rect=(0, 0.08, 1, 1))
+    plt.savefig("figures/forecast_omega_examples.png", dpi=200)
+    plt.close()
+
+
 if __name__ == "__main__":
-    for f in (barycenters_figure, interpolation_figure, kmeans_figure, prior_figure):
+    for f in (barycenters_figure, interpolation_figure, kmeans_figure, prior_figure, forecast_figure):
         f()
         print(f.__name__, "done", flush=True)

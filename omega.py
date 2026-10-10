@@ -13,7 +13,7 @@ from barycenter import _weights
 from softdtw import _as_2d
 
 
-def family_objective(z, Y, kind, gamma, omega=0.0, weights=None):
+def barycenter_objective(z, Y, kind, gamma, omega=0.0, weights=None):
     """Barycenter objective sum_i S(z, y_i) / (N m_i) (Eq. 4) for S = soft-DTW or
     soft-DTW_omega, with weights w_i (uniform 1/N by default). Returns (value, gradient wrt z).
     """
@@ -29,14 +29,14 @@ def family_objective(z, Y, kind, gamma, omega=0.0, weights=None):
     return val, grad
 
 
-def family_barycenter(Y, kind, gamma, init, omega=0.0, max_iter=100, weights=None):
+def soft_barycenter(Y, kind, gamma, init, omega=0.0, max_iter=100, weights=None):
     """L-BFGS barycenter for soft-DTW or soft-DTW_omega."""
     Y = [_as_2d(y) for y in Y]
     init = _as_2d(init)
     shape = init.shape
 
     def f(z):
-        v, gr = family_objective(z.reshape(shape), Y, kind, gamma, omega, weights)
+        v, gr = barycenter_objective(z.reshape(shape), Y, kind, gamma, omega, weights)
         return v, gr.ravel()
 
     res = minimize(f, init.ravel(), jac=True, method="L-BFGS-B", options={"maxiter": max_iter})

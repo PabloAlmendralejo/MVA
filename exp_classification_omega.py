@@ -20,14 +20,14 @@ import pandas as pd
 from joblib import Parallel, delayed
 
 from exp_classification import DATASETS, GAMMAS, SPLITS, load_all, split
-from family import family_barycenter, pairwise_adtw
+from omega import soft_barycenter, pairwise_adtw
 
 OMEGAS = [0.1, 1.0]
 
 
 def fit(X, y, gamma, omega, max_iter=100):
     classes = np.unique(y)
-    C = [family_barycenter(list(X[y == c]), "adtw", gamma, X[y == c].mean(0),
+    C = [soft_barycenter(list(X[y == c]), "adtw", gamma, X[y == c].mean(0),
                            omega=omega, max_iter=max_iter) for c in classes]
     return classes, np.array(C).reshape(len(classes), *X.shape[1:])
 

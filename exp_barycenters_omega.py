@@ -1,15 +1,15 @@
-"""Which soft surrogate gives the best DTW barycenter? (Table 1 protocol, more rows.)
+"""Soft-DTW_omega as a surrogate for DTW barycenters (Table 1 protocol).
 
 The paper uses soft-DTW as a smooth surrogate to minimise the hard DTW barycenter
-loss and compares it with DBA *on that loss*. We apply the same test to every
+loss and compares it with DBA *on that loss*. We apply the same test to
 soft-DTW with a warping penalty omega (kind 'adtw' in the code). All are scored with the hard DTW loss (Eq. 4, gamma = 0):
   * train loss: on the 10 series the barycenter was computed from (as the paper);
   * held-out loss: on up to 20 other series of the same class (detects
     barycenters that fit the idiosyncrasies of the 10 series).
 Draws (class, series, initialisations) are identical to exp_barycenters.py.
 
-Usage:  python exp_family_barycenters.py [n_jobs]          ->  results/family_barycenters.csv
-        python exp_family_barycenters.py [n_jobs] extra    ->  results/family_barycenters_extra.csv
+Usage:  python exp_barycenters_omega.py [n_jobs]          ->  results/barycenters_omega.csv
+        python exp_barycenters_omega.py [n_jobs] extra    ->  results/barycenters_omega_extra.csv
 The 'extra' run adds soft-DTW_omega with gamma = 1 and 0.001 (Table 2 of the
 report) on the same draws; DBA is not recomputed (identical draws and init).
 """
@@ -28,7 +28,7 @@ from joblib import Parallel, delayed
 
 from barycenter import dba_barycenter, dtw_barycenter_loss, euclidean_mean
 from exp_barycenters import DATASETS, N_REPS, N_SERIES, MAX_ITER, load
-from family import family_barycenter
+from omega import soft_barycenter
 
 N_HELDOUT = 20
 # (label, kind, gamma, omega)
@@ -50,7 +50,7 @@ EXTRA_CONFIGS = [
 
 def run_dataset(name, seed=0, extra=False):
     configs = EXTRA_CONFIGS if extra else CONFIGS
-    part = f"results/family_barycenters{'_extra' if extra else ''}_parts/{name}.csv"
+    part = f"results/barycenters_omega{'_extra' if extra else ''}_parts/{name}.csv"
     if os.path.exists(part):
         return pd.read_csv(part).to_dict("records")
     warnings.filterwarnings("ignore")
@@ -70,7 +70,7 @@ def run_dataset(name, seed=0, extra=False):
             runs = [] if extra else [("DBA", None, np.nan, np.nan,
                                       lambda: dba_barycenter(Y, init, max_iter=MAX_ITER))]
             runs += [(label, kind, gamma, omega,
-                      lambda kind=kind, gamma=gamma, omega=omega: family_barycenter(
+                      lambda kind=kind, gamma=gamma, omega=omega: soft_barycenter(
                           Y, kind, gamma, init, omega=omega, max_iter=MAX_ITER))
                      for label, kind, gamma, omega in configs]
             for label, kind, gamma, omega, fn in runs:
@@ -91,5 +91,5 @@ if __name__ == "__main__":
     extra = len(sys.argv) > 2 and sys.argv[2] == "extra"
     out = Parallel(n_jobs=n_jobs, verbose=10)(delayed(run_dataset)(d, extra=extra) for d in DATASETS)
     df = pd.DataFrame([r for rows in out for r in rows])
-    df.to_csv(f"results/family_barycenters{'_extra' if extra else ''}.csv", index=False)
+    df.to_csv(f"results/barycenters_omega{'_extra' if extra else ''}.csv", index=False)
     print(df.groupby(["init", "method", "gamma", "omega"], dropna=False)[["train_loss", "heldout_loss"]].mean())
