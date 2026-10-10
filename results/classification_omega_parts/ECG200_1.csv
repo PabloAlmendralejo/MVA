@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,2.6826957952797246,0.1,0.62,ECG200,1

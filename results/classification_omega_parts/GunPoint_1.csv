@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,0.7196856730011514,0.1,0.9,GunPoint,1

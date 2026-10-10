@@ -5,9 +5,10 @@ soft version of amerced DTW).
 """
 
 import numpy as np
+from numba import njit, prange
 from scipy.optimize import minimize
 
-from softdp import soft_distance_value_and_grad
+from softdp import soft_distance, soft_distance_value_and_grad, soft_dp_forward
 from softdtw import _as_2d
 
 
@@ -39,3 +40,30 @@ def family_barycenter(Y, kind, gamma, init, omega=0.0, max_iter=100):
 
     res = minimize(f, init.ravel(), jac=True, method="L-BFGS-B", options={"maxiter": max_iter})
     return res.x.reshape(shape)
+
+
+@njit(parallel=True, cache=True)
+def _pairwise_adtw(X, C, gamma, omega):
+    A, n, _ = X.shape
+    B, m, _ = C.shape
+    out = np.empty((A, B))
+    for a in prange(A):
+        for b in range(B):
+            Cd = np.full((n + 1, m + 1), np.inf)
+            for i in range(n):
+                for j in range(m):
+                    Cd[i + 1, j + 1] = np.sum((X[a, i] - C[b, j]) ** 2)
+            Cw = Cd + omega
+            out[a, b] = soft_dp_forward(Cd, Cw, Cw, gamma)[n, m]
+    return out
+
+
+def pairwise_adtw(X, C, gamma, omega):
+    """Matrix of soft-DTW_omega(X[a], C[b]) for equal-length series."""
+    X = np.ascontiguousarray(X, dtype=np.float64)
+    C = np.ascontiguousarray(C, dtype=np.float64)
+    if X.ndim == 2:
+        X = X[..., None]
+    if C.ndim == 2:
+        C = C[..., None]
+    return _pairwise_adtw(X, C, float(gamma), float(omega))
