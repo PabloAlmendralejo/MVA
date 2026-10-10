@@ -33,7 +33,7 @@ A time series can be defined as a matrix of the form $x=(x_1,\dots,x_n)\in\R^{n\
 \paragraph{Contributions and work repartition.}
 \textbf{Implementation:} we implemented soft-DTW from scratch (forward and backward recursions in Numba, a PyTorch loss with the hand-written backward, and an anti-diagonal PyTorch version that runs on GPU). \texttt{tslearn}~\cite{tavenard2020tslearn} is only used to load the UCR data, as the DBA baseline and as a numerical cross-check.
 \textbf{Reproduction:} we reproduce, on 10--13 UCR datasets, the paper's barycenter (Table 1), $k$-means (Table 2), nearest-centroid (Fig.~7) and forecasting (Table 3) experiments.
-\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits,; (ii) we propose soft-DTW with a warping penalty, which charges a cost $\omega$ for every time-stretching step (a soft version of amerced DTW~\cite{herrmann2023amercing}, computed as a soft dynamic program with step costs~\cite{mensch2018differentiable}); (iii) following the paper's own protocol, we use it as a surrogate to compute DTW barycenters and compare them under the hard DTW loss, both on the averaged series and on unseen series of the same class.
+\textbf{Beyond the paper:} (i) we report magnitudes and computational costs that the paper omits; (ii) we propose soft-DTW with a warping penalty, which charges a cost $\omega$ for every time-stretching step (a soft version of amerced DTW~\cite{herrmann2023amercing}, computed as a soft dynamic program with step costs~\cite{mensch2018differentiable}); (iii) following the paper's own protocol, we use it as a surrogate to compute DTW barycenters and $k$-means centroids, and compare them with soft-DTW and DBA under the hard DTW loss.
 \textbf{Work repartition:} \todo{Discutir con Pol}.
 
 % ======================================================================
@@ -135,7 +135,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 \begin{table}[t]
 \centering\small
-\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Blocks ``Ours'': soft-DTW$_\omega$ (Section~4.5) on the same draws and initialisations, against the same DBA and subgradient results.}
+\caption{Percentage of datasets on which soft-DTW reaches a lower hard-DTW loss than DBA / the subgradient method. Ours (12 datasets for barycenters, 10 for $k$-means) vs.\ the paper (79 datasets) in parentheses. Blocks ``Ours'': soft-DTW$_\omega$ on the same draws and initialisations, against the same DBA and subgradient results.}
 \label{tab:repro}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{llcccc}
@@ -170,6 +170,8 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 \end{table}
 
 Table~\ref{tab:repro} reproduces the paper's benchmark for barycenters and $k$-means and also adds soft-DTW$_\omega$ to the comparison. For soft-DTW we obtain results similar to the paper's: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. For barycenters with a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). For $k$-means the gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). As for the cost, with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters and centroids, as in the paper's qualitative figures, which we reproduce in the appendix (Figs.~\ref{fig:bary}--\ref{fig:kmeans}), but losses up to $3\times$ that of DBA, mainly because smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size, which inflates the win rates against it.
+
+Our soft-DTW$_\omega$ (blocks ``Ours'') only helps from a random start: with $\gamma=\omega=0.1$ its barycenters have an $8\%$ lower DTW loss than soft-DTW ($\gamma=0.01$) and are computed $1.6\times$ faster, since the penalty removes many degenerate paths from the soft-minimum. It beats DBA on fewer datasets than soft-DTW, but by more where DBA is trapped (down to $0.21\times$ its loss). From the Euclidean mean and in $k$-means, plain soft-DTW remains best: the penalty changes the objective, so as $\gamma\to0$ soft-DTW$_\omega$ no longer converges to the DTW barycenter.
 
 \subsection{Nearest-centroid classification}
 We can also use the barycenter to classify series. Each class is represented by the barycenter of its training series (its centroid), and every new series is given the class of the closest centroid. The paper uses this to compare soft-DTW and DBA barycenters; we add soft-DTW$_\omega$.
@@ -213,34 +215,6 @@ Beyond these differences, Fig.~\ref{fig:forecast} shows a more serious failure. 
 \caption{Test forecasts (last 40\%) from MLPs trained with the Euclidean loss and with soft-DTW ($\gamma=0.01$, random init). On ShapesAll the soft-DTW model degenerates into a flat line with spikes, which DTW scores better than the Euclidean forecast.}
 \label{fig:forecast}
 \end{figure}
-
-\subsection{Other soft surrogates for DTW barycenters}
-The paper uses soft-DTW as a smooth \emph{surrogate} to minimise the hard DTW barycenter loss. We apply the same test to soft-DTW$_\omega$: with the protocol, draws and initialisations of Table~\ref{tab:repro}, each surrogate computes a barycenter, which is scored with the hard DTW loss on the 10 averaged series (as in the paper) and on up to 20 unseen series of the same class (held-out), which penalises barycenters that fit the idiosyncrasies of the 10 series.
-
-\begin{table}[h]
-\centering\small
-\caption{Barycenters from soft-DTW and soft-DTW$_\omega$, scored with the hard DTW loss (12 datasets $\times$ 10 draws). Median over datasets of the loss ratio to soft-DTW with $\gamma=0.01$ (lower is better) and average rank among the 7 methods; last column: median computing time relative to soft-DTW $\gamma=0.01$.}
-\label{tab:family}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{lcccccccc c}
-\toprule
-& \multicolumn{4}{c}{Random init} & \multicolumn{4}{c}{Euclidean-mean init} & \\
-\cmidrule(lr){2-5}\cmidrule(lr){6-9}
-& \multicolumn{2}{c}{train} & \multicolumn{2}{c}{held-out} & \multicolumn{2}{c}{train} & \multicolumn{2}{c}{held-out} & time \\
-Surrogate & ratio & rank & ratio & rank & ratio & rank & ratio & rank & ratio \\
-\midrule
-DBA (hard) & 1.16 & 5.8 & 1.09 & 6.0 & 1.03 & 2.4 & 1.00 & 2.6 & 0.13 \\
-soft-DTW, $\gamma=0.1$ & 0.95 & 3.2 & 0.95 & \textbf{3.2} & 1.06 & 3.8 & 1.03 & 3.9 & 0.79 \\
-soft-DTW, $\gamma=0.01$ & 1 & 4.1 & 1 & 4.3 & 1 & \textbf{1.5} & 1 & \textbf{2.2} & 1 \\
-soft-DTW$_\omega$, $\gamma=0.1$, $\omega=0.1$ & \textbf{0.92} & \textbf{2.8} & 0.95 & \textbf{3.2} & 1.08 & 4.2 & 1.04 & 4.2 & 0.61 \\
-soft-DTW$_\omega$, $\gamma=0.1$, $\omega=1$ & 1.02 & 4.4 & 0.95 & 3.8 & 1.30 & 5.7 & 1.13 & 5.5 & 0.26 \\
-soft-DTW$_\omega$, $\gamma=0.01$, $\omega=0.1$ & 0.96 & 4.1 & 0.98 & 4.2 & 1.07 & 4.7 & 1.03 & 4.2 & 0.54 \\
-soft-DTW$_\omega$, $\gamma=0.01$, $\omega=1$ & 1.00 & 3.7 & 0.95 & 3.4 & 1.32 & 5.8 & 1.14 & 5.4 & 0.27 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Table~\ref{tab:family} gives a nuanced answer. \emph{From a random start}, a small warping penalty helps: soft-DTW$_\omega$ ($\gamma=0.1$, $\omega=0.1$) reaches the lowest DTW loss (median $8\%$ below soft-DTW $\gamma=0.01$, better on 9 of 12 datasets) while being $1.6\times$ faster, and with $\omega=1$ the train loss is no better but the held-out loss is $5\%$ lower, i.e.\ the penalty limits over-fitting to the averaged series. Penalising warping removes the many degenerate paths from the soft-minimum, which both regularises the barycenter and makes the optimisation cheaper. Against DBA, however, soft-DTW$_\omega$ wins on fewer datasets than soft-DTW (83\% vs.\ 92--100\%, Table~\ref{tab:repro}): it gains more where DBA is trapped (down to $0.21\times$ DBA's loss) but also loses on some datasets (up to $1.4\times$). \emph{From the Euclidean mean}, which is already close to a good solution, plain soft-DTW with small $\gamma$ remains best and the penalty costs $3$--$30\%$: the surrogate that is closest to DTW wins when there is no bad local minimum to escape. In short, no surrogate dominates: the right amount of smoothing and of warping penalty depends on the starting point, which is the same lesson as for $\gamma$ in Section~4.2.
 
 \subsection{Soft-DTW$_\omega$ for forecasting}
 We repeat the forecasting experiment of Table~\ref{tab:forecast} ($\gamma=0.01$, 13 datasets), training the MLP with soft-DTW$_\omega$. Besides the paper's two metrics, we measure the timing error of the forecast, the distance between the predicted and true position of the maximum, in \% of the horizon.
