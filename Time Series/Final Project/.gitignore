@@ -12,3 +12,11 @@ report/*.fls
 report/*.fdb_latexmk
 report/*.synctex.gz
 report/*.xsim
+
+slides/*.aux
+slides/*.log
+slides/*.nav
+slides/*.out
+slides/*.snm
+slides/*.toc
+slides/*.synctex.gz

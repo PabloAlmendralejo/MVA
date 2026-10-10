@@ -2,13 +2,18 @@
     // Python / notebook: use the project's virtual environment
     "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
     "python.testing.pytestEnabled": true,
-    "python.testing.pytestArgs": ["tests.py", "tests_softdp.py"],
+    "python.testing.pytestArgs": ["tests"],
 
-    // LaTeX Workshop: build report/main.tex with pdflatex -> bibtex -> pdflatex x2
+    // LaTeX Workshop: report/main.tex uses pdflatex -> bibtex -> pdflatex x2;
+    // slides/slides.tex picks the bibtex-free recipe with its `% !TEX recipe` line
     "latex-workshop.latex.recipes": [
         {
             "name": "pdflatex + bibtex",
             "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"]
+        },
+        {
+            "name": "pdflatex x2 (slides)",
+            "tools": ["pdflatex", "pdflatex"]
         }
     ],
     "latex-workshop.latex.tools": [
@@ -38,6 +43,13 @@
         "report/*.fls": true,
         "report/*.fdb_latexmk": true,
         "report/*.synctex.gz": true,
-        "report/*.xsim": true
+        "report/*.xsim": true,
+        "slides/*.aux": true,
+        "slides/*.log": true,
+        "slides/*.nav": true,
+        "slides/*.out": true,
+        "slides/*.snm": true,
+        "slides/*.toc": true,
+        "slides/*.synctex.gz": true
     }
 }
