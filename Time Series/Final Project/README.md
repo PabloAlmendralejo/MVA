@@ -1,13 +1,13 @@
 # Soft-DTW project
 
-Re-implementation and analysis of Cuturi & Blondel, *Soft-DTW: a Differentiable Loss Function for Time-Series* (ICML 2017), plus an extension to a family of soft alignment distances.
+Re-implementation and analysis of Cuturi & Blondel, *Soft-DTW: a Differentiable Loss Function for Time-Series* (ICML 2017), plus an extension: soft-DTW with a warping penalty ω on time-stretching steps (soft-DTW_ω).
 
 ## Setup (Windows, Python ≥ 3.11)
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install numpy scipy numba torch matplotlib pandas joblib tslearn scikit-learn pytest ipykernel nbformat nbclient
 .venv/Scripts/python -m ipykernel install --user --name softdtw --display-name "Python (softdtw)"
-.venv/Scripts/python -m pytest tests.py tests_softdp.py -q   # should print 85 passed
+.venv/Scripts/python -m pytest tests.py tests_softdp.py -q   # should print 67 passed
 ```
 UCR datasets are downloaded automatically by `tslearn` on first use.
 
