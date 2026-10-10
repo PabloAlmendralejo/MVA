@@ -187,18 +187,22 @@ Once trained, each network forecasts the test series, and we measure the error o
 
 \begin{table}[h]
 \centering\small
-\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses.}
+\caption{Average rank (1 = best) of each training loss on the test forecasts, over 13 datasets; the paper's values (79 datasets) in parentheses. Rows ``ours'': rank of soft-DTW$_\omega$ ($\omega=0.1$ / $\omega=1$) when it replaces soft-DTW with the same $\gamma$.}
 \label{tab:forecast}
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{llccccc}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lllccccc}
 \toprule
-Test metric & Init & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
+Test metric & Init & & Euclidean & $\gamma=1$ & $\gamma=0.1$ & $\gamma=0.01$ & $\gamma=0.001$ \\
 \midrule
-\multirow{2}{*}{DTW} & random & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & \textbf{2.23} (2.79) & 2.85 (\textbf{1.87}) \\
-& Euclidean & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & \textbf{1.69} (\textbf{1.29}) \\
+\multirow{4}{*}{DTW} & \multirow{2}{*}{random} & soft-DTW & 3.69 (3.46) & 3.92 (3.55) & 2.31 (3.33) & 2.23 (2.79) & 2.85 (1.87) \\
+& & ours & & 3.92 / 3.92 & 2.15 / 3.00 & 2.08 / 3.31 & 2.08 / 3.38 \\
+& \multirow{2}{*}{Euclidean} & soft-DTW & 3.92 (4.21) & 4.46 (3.96) & 2.85 (3.42) & 2.08 (2.12) & 1.69 (1.29) \\
+& & ours & & 4.46 / 4.08 & 2.46 / 3.15 & 2.38 / 2.92 & 2.46 / 2.92 \\
 \midrule
-\multirow{2}{*}{Euclidean} & random & \textbf{1.31} (\textbf{1.05}) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
-& Euclidean & 2.77 (\textbf{1.70}) & \textbf{1.62} (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
+\multirow{4}{*}{Euclidean} & \multirow{2}{*}{random} & soft-DTW & 1.31 (1.05) & 1.69 (2.41) & 3.46 (3.42) & 4.00 (4.13) & 4.54 (3.99) \\
+& & ours & & 1.69 / 1.77 & 3.31 / 2.00 & 3.15 / 1.92 & 3.23 / 1.85 \\
+& \multirow{2}{*}{Euclidean} & soft-DTW & 2.77 (1.70) & 1.62 (2.99) & 2.38 (3.38) & 3.77 (3.64) & 4.46 (3.29) \\
+& & ours & & 1.62 / 1.69 & 2.23 / 2.38 & 2.77 / 2.38 & 2.62 / 2.23 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -207,45 +211,16 @@ Table~\ref{tab:forecast} confirms the paper's main claim: each loss wins on its 
 
 We also find two differences with the paper. First, with $\gamma=0.001$ and random weights, training is unstable on some datasets: on Coffee the test DTW is $3.2\times$ that of the Euclidean network, as also reported in~\cite{zeitler2023stabilizing}, and starting from the Euclidean network removes the problem. Second, ignoring time has a high price: soft-DTW forecasts have the right shape but at the wrong place, so their Euclidean error is $1.5\times$ ($\gamma=0.1$) to $3.4\times$ ($\gamma=0.001$) that of the Euclidean network.
 
-Beyond these differences, Fig.~\ref{fig:forecast} shows a more serious failure. On ShapesAll, the network trained with soft-DTW predicts an almost flat line with a few isolated spikes, and yet its test DTW is \emph{lower} than that of the Euclidean network ($6.6$ vs.\ $9.3$). The reason is that DTW can match a single point of the prediction with a whole segment of the true series: one spike at the right height is enough to ``cover'' an entire rise. Such predictions are therefore cheap for DTW, both when training and when evaluating. Soft-DTW does not penalise these stretchings~\cite{leguen2019shape}; to avoid them we need a cost on each stretching step, which is what soft-DTW$_\omega$ adds (next section).
+Beyond these differences, Fig.~\ref{fig:forecast} shows a more serious failure. On ShapesAll, the network trained with soft-DTW predicts an almost flat line with a few isolated spikes, and yet its test DTW is \emph{lower} than that of the Euclidean network ($6.6$ vs.\ $9.3$). The reason is that DTW can match a single point of the prediction with a whole segment of the true series: one spike at the right height is enough to ``cover'' an entire rise. Such predictions are therefore cheap for DTW, both when training and when evaluating. Soft-DTW does not penalise these stretchings~\cite{leguen2019shape}; soft-DTW$_\omega$ does, by charging $\omega$ for each of them.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{forecast_examples.png}
-\caption{Test forecasts (last 40\%) from MLPs trained with the Euclidean loss and with soft-DTW ($\gamma=0.01$, random init). On ShapesAll the soft-DTW model degenerates into a flat line with spikes, which DTW scores better than the Euclidean forecast.}
+\includegraphics[width=\linewidth]{forecast_omega_examples.png}
+\caption{Test forecasts (last 40\%) of networks trained from random weights with soft-DTW and with soft-DTW$_\omega$ ($\omega=1$), $\gamma=0.01$. On ShapesAll soft-DTW degenerates into a flat line with spikes, which DTW scores better than the Euclidean forecast; the warping penalty removes it.}
 \label{fig:forecast}
 \end{figure}
 
-\subsection{Soft-DTW$_\omega$ for forecasting}
-We repeat the forecasting experiment of Table~\ref{tab:forecast} ($\gamma=0.01$, 13 datasets), training the MLP with soft-DTW$_\omega$. Besides the paper's two metrics, we measure the timing error of the forecast, the distance between the predicted and true position of the maximum, in \% of the horizon.
-
-\begin{table}[h]
-\centering\small
-\caption{Forecasting with soft-DTW$_\omega$ ($\gamma=0.01$, 13 datasets). Median test error relative to soft-DTW (average rank among the 4 losses for DTW) and median timing error of the maximum.}
-\label{tab:forecast_omega}
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lcccccc}
-\toprule
-& \multicolumn{3}{c}{Random init} & \multicolumn{3}{c}{Euclidean init} \\
-\cmidrule(lr){2-4}\cmidrule(lr){5-7}
-Training loss & DTW (rank) & Euclidean & timing & DTW (rank) & Euclidean & timing \\
-\midrule
-Euclidean & 1.14 (3.2) & \textbf{0.44} & 10.1\% & 1.24 (3.5) & 0.95 & 10.1\% \\
-soft-DTW & 1 (2.2) & 1 & 20.7\% & 1 (\textbf{1.5}) & 1 & \textbf{9.1}\% \\
-soft-DTW$_\omega$, $\omega=0.1$ & \textbf{0.98 (1.5)} & 0.68 & 11.7\% & 1.01 (2.2) & 0.98 & 9.2\% \\
-soft-DTW$_\omega$, $\omega=1$ & 1.06 (3.1) & \textbf{0.44} & \textbf{9.6}\% & 1.07 (2.8) & \textbf{0.90} & 9.6\% \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{forecast_omega_examples.png}
-\caption{Test forecasts of MLPs trained from random weights with soft-DTW and with soft-DTW$_\omega$ ($\omega=1$), $\gamma=0.01$. The warping penalty removes the degenerate flat-line-and-spikes forecasts of soft-DTW on ShapesAll.}
-\label{fig:forecast_omega}
-\end{figure}
-
-Here the penalty pays off clearly (Table~\ref{tab:forecast_omega}). Trained from random weights, the realistic setting for a network, soft-DTW$_\omega$ with $\omega=0.1$ beats soft-DTW on its own metric (best average DTW rank) while reducing the Euclidean error by $32\%$ and almost halving the timing error. With $\omega=1$ the network matches the Euclidean model in Euclidean and timing error and still predicts better shapes than it ($1.06$ vs $1.14$). The penalty also removes the failures of soft-DTW: the degenerate forecasts on ShapesAll disappear (Fig.~\ref{fig:forecast_omega}), and the unstable runs on Coffee (Euclidean error $54.7\to1.2$) and Plane (DTW $0.65\to0.35$) are fixed. From the Euclidean warm start, which already avoids these failures, the differences are small. The warping penalty thus turns soft-DTW into a controllable trade-off between shape and timing.
+The rows ``ours'' of Table~\ref{tab:forecast} show the effect of this penalty. From random weights, a small penalty ($\omega=0.1$) is almost free: it improves the DTW rank of soft-DTW for every $\gamma\le0.1$, and for $\gamma\le0.01$ it also lowers the Euclidean error by $30\%$. A larger penalty ($\omega=1$) loses $6$--$9\%$ in DTW but divides the Euclidean error by $2$ to $3$, on all 13 datasets, which brings its Euclidean rank close to that of the Euclidean network. The penalty also removes the failures described above: on ShapesAll the flat line with spikes disappears (Fig.~\ref{fig:forecast}), and with $\gamma=0.001$ the unstable runs are fixed (test DTW $1.44\to0.44$ on Coffee and $0.69\to0.35$ on Plane, $\omega=1$). From the Euclidean network, which already avoids these failures, the effect is small. As for barycenters, the penalty helps most from a poor starting point, and $\omega$ sets the trade-off between the shape and the timing of the forecast.
 
 % ======================================================================
 \section{Conclusion}
