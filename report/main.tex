@@ -178,7 +178,7 @@ As in the paper, we merge the train and test sets of each dataset and split them
 
 The key insight is that soft-DTW centroids classify better than DBA centroids: they are at least as accurate on 83\% of the datasets (paper: 75\%). Soft-DTW$_\omega$ does not improve on soft-DTW: it is better on 6 datasets and worse on 4.
 
-\subsection{Multistep-ahead forecasting (Table 3 of the paper)}
+\subsection{Multistep-ahead forecasting}
 Soft-DTW can also be used as a training loss. Following the paper, we train a network to forecast the end of a series: it sees the first 60\% of the series and must predict the remaining 40\%. The network is an MLP (one hidden layer of 256 sigmoid units, trained with Adam for 400 epochs; the paper does not give these values). We train it with three losses: the Euclidean loss, soft-DTW and our soft-DTW$_\omega$. The soft-DTW and soft-DTW$_\omega$ networks are trained in two ways: from scratch (random weights), or by taking the network already trained with the Euclidean loss and continuing its training with soft-DTW (resp.\ soft-DTW$_\omega$). We use 13 datasets.
 
 Once trained, each network forecasts the test series, and we measure the error of these forecasts in two ways: with DTW, which forgives small shifts in time, and with the Euclidean distance, which does not. On each dataset we rank the losses from best (1) to worst, and Table~\ref{tab:forecast} gives the average rank over the 13 datasets, next to the paper's values.
