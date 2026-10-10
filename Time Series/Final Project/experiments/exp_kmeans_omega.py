@@ -4,7 +4,7 @@ Same datasets, inits (k random series, 3 seeds, and Euclidean k-means), iteratio
 limits and hard-DTW energy as exp_kmeans.py; assignment and centring both use
 soft-DTW_omega. Checkpointed per job in results/kmeans_omega_parts/.
 
-Usage:  python exp_kmeans_omega.py [n_jobs]  ->  results/kmeans_omega.csv
+Usage:  python -m experiments.exp_kmeans_omega [n_jobs]  ->  results/kmeans_omega.csv
 """
 
 import os
@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clustering import dtw_kmeans, kmeans_energy
-from exp_kmeans import DATASETS, GAMMAS, SEEDS, euclidean_kmeans_init, load_train
+from softdtw.clustering import dtw_kmeans, kmeans_energy
+from experiments.exp_kmeans import DATASETS, GAMMAS, SEEDS, euclidean_kmeans_init, load_train
 
 OMEGAS = [0.1, 1.0]
 

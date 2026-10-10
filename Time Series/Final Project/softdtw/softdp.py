@@ -26,7 +26,7 @@ Cd = Cv = Ch = Delta on the interior with forbidden borders.
 import numpy as np
 from numba import njit
 
-from softdtw import _as_2d, sqeuclidean_cost
+from .core import _as_2d, sqeuclidean_cost
 
 
 # ---------------------------------------------------------------------------

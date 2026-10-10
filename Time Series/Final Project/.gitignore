@@ -10,6 +10,5 @@ report/*.blg
 report/*.out
 report/*.fls
 report/*.fdb_latexmk
-overleaf.zip
 report/*.synctex.gz
 report/*.xsim

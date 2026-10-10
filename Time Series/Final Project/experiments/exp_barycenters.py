@@ -5,7 +5,7 @@ that class, compute their barycenter with every method from the same init, and
 evaluate the hard DTW loss (Eq. 4, gamma = 0). Repeat 10 times. Max 100 iterations.
 Two inits: random N(0, 1) (UCR series are z-normalised) and the Euclidean mean.
 
-Usage:  python exp_barycenters.py [n_jobs]   ->  results/barycenters.csv
+Usage:  python -m experiments.exp_barycenters [n_jobs]   ->  results/barycenters.csv
 """
 
 import sys
@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from barycenter import (dba_barycenter, dtw_barycenter_loss, euclidean_mean,
+from softdtw.barycenter import (dba_barycenter, dtw_barycenter_loss, euclidean_mean,
                         softdtw_barycenter, subgradient_barycenter)
 
 DATASETS = ["ItalyPowerDemand", "SyntheticControl", "TwoLeadECG", "ECG200",

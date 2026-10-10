@@ -8,7 +8,7 @@ soft-DTW models: random, or the weights of the Euclidean-trained MLP.
 Test metrics: Euclidean (sum of squares per series) and hard DTW; for each
 dataset and metric the 5 models are ranked, then ranks are averaged.
 
-Usage:  python exp_forecast.py  ->  results/forecast.csv, results/forecast_examples.npz
+Usage:  python -m experiments.exp_forecast  ->  results/forecast.csv, results/forecast_examples.npz
 """
 
 import copy
@@ -18,8 +18,8 @@ import numpy as np
 import pandas as pd
 import torch
 
-from clustering import pairwise_sdtw
-from torch_sdtw import SoftDTWLoss
+from softdtw.clustering import pairwise_sdtw
+from softdtw.torch_sdtw import SoftDTWLoss
 
 DATASETS = ["ItalyPowerDemand", "SyntheticControl", "TwoLeadECG", "ECG200",
             "CBF", "ECGFiveDays", "GunPoint", "Plane", "ArrowHead", "Coffee",

@@ -5,7 +5,7 @@ For random pairs of series of the same class we measure
   * lag: the shift maximising their cross-correlation, in % of the length;
   * gain: 1 - DTW / Euclidean (squared costs), the share of the Euclidean cost
     removed by allowing time warping.
-Usage:  python data_diagnosis.py  ->  results/data_diagnosis.csv
+Usage:  python -m experiments.data_diagnosis  ->  results/data_diagnosis.csv
 """
 
 import warnings

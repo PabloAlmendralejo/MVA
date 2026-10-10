@@ -5,7 +5,7 @@ iterations, as in Section 4.2. Training split only, capped at N_MAX series to ke
 the cost reasonable. Evaluation: hard-DTW k-means energy (Eq. 5, gamma = 0).
 Inits: k random series of the dataset (3 seeds) and Euclidean k-means centroids.
 
-Usage:  python exp_kmeans.py [n_jobs]  ->  results/kmeans.csv
+Usage:  python -m experiments.exp_kmeans [n_jobs]  ->  results/kmeans.csv
 """
 
 import sys
@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clustering import dtw_kmeans, kmeans_energy
+from softdtw.clustering import dtw_kmeans, kmeans_energy
 
 DATASETS = ["ItalyPowerDemand", "TwoLeadECG", "ECG200", "CBF", "ECGFiveDays",
             "GunPoint", "Plane", "ArrowHead", "Coffee", "Trace"]

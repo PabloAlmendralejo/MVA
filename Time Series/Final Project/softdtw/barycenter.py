@@ -15,7 +15,7 @@ dba_barycenter       : DBA (Petitjean et al., 2011), tslearn implementation
 import numpy as np
 from scipy.optimize import minimize
 
-from softdtw import (_as_2d, dtw, dtw_value_and_subgrad, soft_dtw_value_and_grad)
+from .core import (_as_2d, dtw, dtw_value_and_subgrad, soft_dtw_value_and_grad)
 
 
 def _weights(Y, weights):

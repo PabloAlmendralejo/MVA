@@ -1,7 +1,7 @@
 """Timing of forward + backward for a batch: Numba (CPU) vs anti-diagonal PyTorch (CPU / CUDA).
 
-Run locally or on Google Colab with a GPU runtime (upload softdtw.py, torch_sdtw.py,
-torch_sdtw_diag.py and this file, then `!python bench_gpu.py`).
+Run locally or on Google Colab with a GPU runtime (upload the folders softdtw/ and experiments/,
+then `!python -m experiments.bench_gpu` from the folder that contains them).
 Writes results/bench_gpu.csv.
 """
 
@@ -11,8 +11,8 @@ import time
 import pandas as pd
 import torch
 
-from torch_sdtw import SoftDTWLoss
-from torch_sdtw_diag import SoftDTWLossDiag
+from softdtw.torch_sdtw import SoftDTWLoss
+from softdtw.torch_sdtw_diag import SoftDTWLossDiag
 
 
 def time_it(loss, x, y, repeat=3):

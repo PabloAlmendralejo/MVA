@@ -1,4 +1,4 @@
-"""Correctness checks for softdtw.py and torch_sdtw.py.  Run:  pytest tests.py -v"""
+"""Correctness checks for softdtw/core.py and softdtw/torch_sdtw.py.  Run:  pytest tests -v"""
 
 import itertools
 
@@ -8,7 +8,7 @@ import torch
 
 from softdtw import (dtw, dtw_path, soft_dtw, soft_dtw_alignment,
                      soft_dtw_value_and_grad, sqeuclidean_cost)
-from torch_sdtw import SoftDTWLoss, soft_dtw_torch_naive
+from softdtw.torch_sdtw import SoftDTWLoss, soft_dtw_torch_naive
 
 rng = np.random.default_rng(0)
 
@@ -177,7 +177,7 @@ def test_torch_batch_and_chain_rule():
 @pytest.mark.parametrize("gamma", [0.01, 0.1, 1.0])
 @pytest.mark.parametrize("n,m", [(1, 1), (5, 9), (12, 7)])
 def test_antidiagonal_torch_matches_numba(n, m, gamma):
-    from torch_sdtw_diag import SoftDTWLossDiag
+    from softdtw.torch_sdtw_diag import SoftDTWLossDiag
     B = 3
     x = torch.tensor(rng.normal(size=(B, n, 2)), requires_grad=True)
     y = torch.tensor(rng.normal(size=(B, m, 2)), requires_grad=True)
@@ -193,7 +193,7 @@ def test_antidiagonal_torch_matches_numba(n, m, gamma):
 
 @pytest.mark.parametrize("omega", [0.0, 0.5])
 def test_torch_loss_omega_matches_engine(omega):
-    from softdp import soft_distance_value_and_grad
+    from softdtw.softdp import soft_distance_value_and_grad
     kind, params = ("adtw", {"omega": omega}) if omega > 0 else ("dtw", {})
     B, gamma = 3, 0.3
     X, Y = rng.normal(size=(B, 7, 2)), rng.normal(size=(B, 9, 2))

@@ -7,9 +7,9 @@ methods are compared with the hard energy (gamma = 0), as in Table 2.
 import numpy as np
 from numba import njit, prange
 
-from barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
-from family import family_barycenter, pairwise_adtw
-from softdtw import sdtw_forward, sqeuclidean_cost
+from .barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
+from .omega import soft_barycenter, pairwise_adtw
+from .core import sdtw_forward, sqeuclidean_cost
 
 
 @njit(parallel=True, cache=True)
@@ -69,7 +69,7 @@ def dtw_kmeans(X, k, method, init_centroids, gamma=None, max_outer=30, max_inner
             if method == "soft-DTW":
                 C[j] = softdtw_barycenter(members, gamma, C[j], max_iter=max_inner)
             elif method == "soft-DTW_omega":
-                C[j] = family_barycenter(members, "adtw", gamma, C[j], omega=omega,
+                C[j] = soft_barycenter(members, "adtw", gamma, C[j], omega=omega,
                                          max_iter=max_inner).reshape(C[j].shape)
             elif method == "DBA":
                 C[j] = dba_barycenter(members, C[j], max_iter=max_inner)
