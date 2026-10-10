@@ -20,3 +20,5 @@ slides/*.out
 slides/*.snm
 slides/*.toc
 slides/*.synctex.gz
+slides/*.bbl
+slides/*.blg
