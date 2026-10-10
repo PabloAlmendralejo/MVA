@@ -8,6 +8,7 @@ import numpy as np
 from numba import njit, prange
 
 from barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
+from family import family_barycenter, pairwise_adtw
 from softdtw import sdtw_forward, sqeuclidean_cost
 
 
@@ -42,10 +43,11 @@ def kmeans_energy(X, C):
     return float(pairwise_sdtw(X, C, 0.0).min(1).sum() / X.shape[1])
 
 
-def dtw_kmeans(X, k, method, init_centroids, gamma=None, max_outer=30, max_inner=100):
+def dtw_kmeans(X, k, method, init_centroids, gamma=None, max_outer=30, max_inner=100, omega=0.0):
     """Lloyd's algorithm where assignment and centring both use the method's geometry.
 
     method: 'soft-DTW' (assign with dtw_gamma, centre with soft-DTW barycenter),
+            'soft-DTW_omega' (assign and centre with soft-DTW_omega, penalty omega),
             'DBA' or 'subgradient' (assign with hard DTW, centre with that barycenter).
     Returns (centroids, labels).
     """
@@ -53,7 +55,10 @@ def dtw_kmeans(X, k, method, init_centroids, gamma=None, max_outer=30, max_inner
     assign_gamma = gamma if method == "soft-DTW" else 0.0
     labels = None
     for _ in range(max_outer):
-        new_labels = pairwise_sdtw(X, C, assign_gamma).argmin(1)
+        if method == "soft-DTW_omega":
+            new_labels = pairwise_adtw(X, C, gamma, omega).argmin(1)
+        else:
+            new_labels = pairwise_sdtw(X, C, assign_gamma).argmin(1)
         if labels is not None and np.array_equal(new_labels, labels):
             break
         labels = new_labels
@@ -63,6 +68,9 @@ def dtw_kmeans(X, k, method, init_centroids, gamma=None, max_outer=30, max_inner
                 continue
             if method == "soft-DTW":
                 C[j] = softdtw_barycenter(members, gamma, C[j], max_iter=max_inner)
+            elif method == "soft-DTW_omega":
+                C[j] = family_barycenter(members, "adtw", gamma, C[j], omega=omega,
+                                         max_iter=max_inner).reshape(C[j].shape)
             elif method == "DBA":
                 C[j] = dba_barycenter(members, C[j], max_iter=max_inner)
             else:

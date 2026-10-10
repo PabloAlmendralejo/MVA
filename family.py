@@ -9,17 +9,18 @@ from numba import njit, prange
 from scipy.optimize import minimize
 
 from softdp import soft_distance, soft_distance_value_and_grad, soft_dp_forward
+from barycenter import _weights
 from softdtw import _as_2d
 
 
-def family_objective(z, Y, kind, gamma, omega=0.0):
+def family_objective(z, Y, kind, gamma, omega=0.0, weights=None):
     """Barycenter objective sum_i S(z, y_i) / (N m_i) (Eq. 4) for S = soft-DTW or
-    soft-DTW_omega. Returns (value, gradient wrt z).
+    soft-DTW_omega, with weights w_i (uniform 1/N by default). Returns (value, gradient wrt z).
     """
     z = _as_2d(z)
     Y = [_as_2d(y) for y in Y]
     params = {"omega": omega} if kind == "adtw" else {}
-    w = np.array([1.0 / (len(Y) * len(y)) for y in Y])
+    w = _weights(Y, weights)
     val, grad = 0.0, np.zeros_like(z)
     for wi, y in zip(w, Y):
         v, gr = soft_distance_value_and_grad(z, y, gamma, kind, **params)
@@ -28,14 +29,14 @@ def family_objective(z, Y, kind, gamma, omega=0.0):
     return val, grad
 
 
-def family_barycenter(Y, kind, gamma, init, omega=0.0, max_iter=100):
+def family_barycenter(Y, kind, gamma, init, omega=0.0, max_iter=100, weights=None):
     """L-BFGS barycenter for soft-DTW or soft-DTW_omega."""
     Y = [_as_2d(y) for y in Y]
     init = _as_2d(init)
     shape = init.shape
 
     def f(z):
-        v, gr = family_objective(z.reshape(shape), Y, kind, gamma, omega)
+        v, gr = family_objective(z.reshape(shape), Y, kind, gamma, omega, weights)
         return v, gr.ravel()
 
     res = minimize(f, init.ravel(), jac=True, method="L-BFGS-B", options={"maxiter": max_iter})
