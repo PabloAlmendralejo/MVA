@@ -1,0 +1,21 @@
+[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   4 tasks      | elapsed:  1.6min
+[Parallel(n_jobs=7)]: Done  11 tasks      | elapsed:  5.0min
+[Parallel(n_jobs=7)]: Done  18 tasks      | elapsed: 29.2min
+[Parallel(n_jobs=7)]: Done  27 out of  36 | elapsed: 41.1min remaining: 13.7min
+[Parallel(n_jobs=7)]: Done  31 out of  36 | elapsed: 59.5min remaining:  9.6min
+[Parallel(n_jobs=7)]: Done  36 out of  36 | elapsed: 65.5min finished
+                       acc     gamma  omega
+dataset                                    
+ArrowHead         0.735849  0.001000    1.0
+CBF               0.948498  0.017932    0.1
+Coffee            1.000000  0.001000    0.1
+ECG200            0.726667  0.967531    0.4
+ECGFiveDays       0.885370  0.003066    1.0
+GunPoint          0.766667  0.241471    0.4
+ItalyPowerDemand  0.957421  0.003066    1.0
+MedicalImages     0.463869  0.098886    0.4
+Plane             1.000000  0.001000    0.1
+SyntheticControl  0.993333  0.002219    0.1
+Trace             0.846667  0.043472    0.1
+TwoLeadECG        0.876289  0.018206    0.4

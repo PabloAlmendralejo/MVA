@@ -1,0 +1,17 @@
+[Parallel(n_jobs=7)]: Using backend LokyBackend with 7 concurrent workers.
+[Parallel(n_jobs=7)]: Done   1 tasks      | elapsed:   11.7s
+[Parallel(n_jobs=7)]: Done   3 out of  12 | elapsed:   30.9s remaining:  1.6min
+[Parallel(n_jobs=7)]: Done   5 out of  12 | elapsed:   34.1s remaining:   47.8s
+[Parallel(n_jobs=7)]: Done   7 out of  12 | elapsed:   51.7s remaining:   36.9s
+[Parallel(n_jobs=7)]: Done   9 out of  12 | elapsed:  1.4min remaining:   27.8s
+[Parallel(n_jobs=7)]: Done  12 out of  12 | elapsed:  4.8min finished
+                                      train_loss  heldout_loss
+init      method         gamma omega                          
+euclidean soft-DTW_omega 0.001 0.1      0.047780      0.061841
+                               1.0      0.059529      0.069112
+                         1.000 0.1      0.068168      0.078325
+                               1.0      0.067198      0.077005
+random    soft-DTW_omega 0.001 0.1      0.052138      0.066416
+                               1.0      0.056501      0.066459
+                         1.000 0.1      0.069137      0.079061
+                               1.0      0.067475      0.077162
