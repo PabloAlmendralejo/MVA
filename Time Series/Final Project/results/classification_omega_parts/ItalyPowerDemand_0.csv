@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,0.0071968567300115215,1.0,0.9671532846715328,ItalyPowerDemand,0

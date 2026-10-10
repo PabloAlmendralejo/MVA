@@ -1,0 +1,9 @@
+dataset,init,seed,method,gamma,omega,energy,time
+Trace,euclidean,0,soft-DTW_omega,1.0,0.1,0.49704397419246016,127.19064270000672
+Trace,euclidean,0,soft-DTW_omega,1.0,1.0,1.0163436507317456,51.97291900002165
+Trace,euclidean,0,soft-DTW_omega,0.1,0.1,0.6113554459350917,40.42516419995809
+Trace,euclidean,0,soft-DTW_omega,0.1,1.0,1.161671651720248,18.47965639998438
+Trace,euclidean,0,soft-DTW_omega,0.01,0.1,0.6053940378991739,62.947603800043
+Trace,euclidean,0,soft-DTW_omega,0.01,1.0,0.9981267989344367,27.199361399980262
+Trace,euclidean,0,soft-DTW_omega,0.001,0.1,0.5929217789388038,109.42239419999532
+Trace,euclidean,0,soft-DTW_omega,0.001,1.0,1.0133881163909007,27.770320700015873

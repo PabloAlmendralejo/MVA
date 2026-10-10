@@ -1,0 +1,9 @@
+dataset,init,seed,method,gamma,omega,energy,time
+Coffee,euclidean,0,soft-DTW_omega,1.0,0.1,0.10540807922742107,4.404296699969564
+Coffee,euclidean,0,soft-DTW_omega,1.0,1.0,0.08900379955720489,3.547396600013599
+Coffee,euclidean,0,soft-DTW_omega,0.1,0.1,0.06505707779491159,4.288894600002095
+Coffee,euclidean,0,soft-DTW_omega,0.1,1.0,0.06145327895473119,2.6108360000071116
+Coffee,euclidean,0,soft-DTW_omega,0.01,0.1,0.059801824045495666,5.841455599991605
+Coffee,euclidean,0,soft-DTW_omega,0.01,1.0,0.06145327895473119,2.744905000028666
+Coffee,euclidean,0,soft-DTW_omega,0.001,0.1,0.05999679114765357,7.719822499959264
+Coffee,euclidean,0,soft-DTW_omega,0.001,1.0,0.06145327895473119,3.8860118999728

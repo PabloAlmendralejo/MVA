@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,0.19306977288832497,1.0,0.479020979020979,MedicalImages,1

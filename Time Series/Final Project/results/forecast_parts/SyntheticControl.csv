@@ -1,0 +1,11 @@
+dataset,init,model,gamma,euclid,dtw
+SyntheticControl,random,Euclidean,,11.653379456341455,6.33103198119406
+SyntheticControl,euclidean,Euclidean,,11.653379456341455,6.33103198119406
+SyntheticControl,random,soft-DTW,1.0,14.169000299303358,7.778125377663967
+SyntheticControl,euclidean,soft-DTW,1.0,11.39117488338898,6.54211954077996
+SyntheticControl,random,soft-DTW,0.1,17.21505852262013,5.7042841616163455
+SyntheticControl,euclidean,soft-DTW,0.1,15.502052123344134,5.297198715664894
+SyntheticControl,random,soft-DTW,0.01,17.211153293144708,5.575005835492941
+SyntheticControl,euclidean,soft-DTW,0.01,15.676659802309024,5.116051158452356
+SyntheticControl,random,soft-DTW,0.001,17.186912480598316,5.547064874153728
+SyntheticControl,euclidean,soft-DTW,0.001,15.582804612892081,5.089178141927859

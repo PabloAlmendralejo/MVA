@@ -1,0 +1,9 @@
+dataset,init,seed,method,gamma,omega,energy,time
+ItalyPowerDemand,random,2,soft-DTW_omega,1.0,0.1,5.390680733463342,0.5361862999852747
+ItalyPowerDemand,random,2,soft-DTW_omega,1.0,1.0,5.051821483579682,0.18146500003058463
+ItalyPowerDemand,random,2,soft-DTW_omega,0.1,0.1,3.8705633694126145,0.5044408999965526
+ItalyPowerDemand,random,2,soft-DTW_omega,0.1,1.0,4.7444834776763,0.208785800030455
+ItalyPowerDemand,random,2,soft-DTW_omega,0.01,0.1,4.266630771376019,0.1630991999991238
+ItalyPowerDemand,random,2,soft-DTW_omega,0.01,1.0,4.735921226388444,0.11206309997942299
+ItalyPowerDemand,random,2,soft-DTW_omega,0.001,0.1,4.269485236344584,0.21434080001199618
+ItalyPowerDemand,random,2,soft-DTW_omega,0.001,1.0,4.735710353873391,0.17003670003032312

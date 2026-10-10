@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,0.0019306977288832496,0.1,0.9933333333333333,SyntheticControl,1

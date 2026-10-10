@@ -1,0 +1,2 @@
+method,gamma,omega,acc,dataset,split
+soft-DTW_omega,0.001,1.0,0.9004524886877828,ECGFiveDays,2
