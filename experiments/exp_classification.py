@@ -7,7 +7,7 @@ uses dtw_gamma. DBA centroids are predicted with hard DTW. Extra baselines the
 paper does not report: Euclidean mean + Euclidean distance, and 1-NN DTW.
 Repeated over 3 random splits.
 
-Usage:  python exp_classification.py [n_jobs]  ->  results/classification.csv
+Usage:  python -m experiments.exp_classification [n_jobs]  ->  results/classification.csv
 """
 
 import sys
@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from clustering import nearest_centroid_fit, nearest_centroid_predict, pairwise_sdtw
+from softdtw.clustering import nearest_centroid_fit, nearest_centroid_predict, pairwise_sdtw
 
 DATASETS = ["ItalyPowerDemand", "SyntheticControl", "TwoLeadECG", "ECG200",
             "CBF", "ECGFiveDays", "GunPoint", "Plane", "ArrowHead", "Coffee",

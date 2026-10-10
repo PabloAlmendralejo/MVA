@@ -5,7 +5,7 @@ per class (soft-DTW_omega, initialised at the class Euclidean mean), test series
 assigned to the closest centroid under soft-DTW_omega; gamma (15 log-spaced values
 in [1e-3, 10]) and omega in {0.1, 1} are selected jointly on validation.
 
-Usage:  python exp_classification_omega.py [n_jobs]  ->  results/classification_omega.csv
+Usage:  python -m experiments.exp_classification_omega [n_jobs]  ->  results/classification_omega.csv
 """
 
 import os
@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from exp_classification import DATASETS, GAMMAS, SPLITS, load_all, split
-from omega import soft_barycenter, pairwise_adtw
+from experiments.exp_classification import DATASETS, GAMMAS, SPLITS, load_all, split
+from softdtw.omega import soft_barycenter, pairwise_adtw
 
 OMEGAS = [0.1, 1.0]
 

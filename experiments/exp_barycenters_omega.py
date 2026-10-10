@@ -8,8 +8,8 @@ soft-DTW with a warping penalty omega (kind 'adtw' in the code). All are scored 
     barycenters that fit the idiosyncrasies of the 10 series).
 Draws (class, series, initialisations) are identical to exp_barycenters.py.
 
-Usage:  python exp_barycenters_omega.py [n_jobs]          ->  results/barycenters_omega.csv
-        python exp_barycenters_omega.py [n_jobs] extra    ->  results/barycenters_omega_extra.csv
+Usage:  python -m experiments.exp_barycenters_omega [n_jobs]          ->  results/barycenters_omega.csv
+        python -m experiments.exp_barycenters_omega [n_jobs] extra    ->  results/barycenters_omega_extra.csv
 The 'extra' run adds soft-DTW_omega with gamma = 1 and 0.001 (Table 2 of the
 report) on the same draws; DBA is not recomputed (identical draws and init).
 """
@@ -26,9 +26,9 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 
-from barycenter import dba_barycenter, dtw_barycenter_loss, euclidean_mean
-from exp_barycenters import DATASETS, N_REPS, N_SERIES, MAX_ITER, load
-from omega import soft_barycenter
+from softdtw.barycenter import dba_barycenter, dtw_barycenter_loss, euclidean_mean
+from experiments.exp_barycenters import DATASETS, N_REPS, N_SERIES, MAX_ITER, load
+from softdtw.omega import soft_barycenter
 
 N_HELDOUT = 20
 # (label, kind, gamma, omega)

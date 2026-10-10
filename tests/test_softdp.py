@@ -1,9 +1,9 @@
-"""Checks for the general soft DP engine (softdp.py).  Run:  pytest tests_softdp.py -v"""
+"""Checks for the general soft DP engine (softdtw/softdp.py).  Run:  pytest tests -v"""
 
 import numpy as np
 import pytest
 
-from softdp import (edge_costs, expected_warps, soft_distance,
+from softdtw.softdp import (edge_costs, expected_warps, soft_distance,
                     soft_distance_value_and_grad, soft_dp, soft_dp_forward)
 from softdtw import soft_dtw, soft_dtw_alignment
 
@@ -112,7 +112,7 @@ def test_hard_forward_equals_min_over_paths():
 
 @pytest.mark.parametrize("kind,params", KINDS)
 def test_barycenter_objective_gradient(kind, params):
-    from omega import barycenter_objective
+    from softdtw.omega import barycenter_objective
     Y = [rng.normal(size=(6, 1)), rng.normal(size=(8, 1)), rng.normal(size=(7, 1))]
     z = rng.normal(size=(5, 1))
     kw = dict(omega=params.get("omega", 0.0))
@@ -127,8 +127,8 @@ def test_barycenter_objective_gradient(kind, params):
 
 
 def test_soft_barycenter_dtw_matches_softdtw_barycenter():
-    from barycenter import softdtw_barycenter
-    from omega import soft_barycenter
+    from softdtw.barycenter import softdtw_barycenter
+    from softdtw.omega import soft_barycenter
     Y = [rng.normal(size=(12, 1)) for _ in range(4)]
     init = rng.normal(size=(12, 1))
     a = soft_barycenter(Y, "dtw", 0.1, init)

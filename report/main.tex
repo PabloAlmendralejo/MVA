@@ -39,13 +39,11 @@ A time series can be defined as a matrix of the form $x=(x_1,\dots,x_n)\in\R^{n\
 % ======================================================================
 \section{Method}
 
-\paragraph{DTW.}
 Let $x\in\R^{n\times p}$ and $y\in\R^{m\times p}$ be two time series. Matching $x_i$ with $y_j$ costs $\delta_{i,j}=\|x_i-y_j\|^2$, and these costs form the matrix $\Delta(x,y)=[\delta_{i,j}]_{i,j}\in\R^{n\times m}$. An \emph{alignment} is a path in this matrix from cell $(1,1)$ to cell $(n,m)$ made of three kinds of steps: $\searrow$ (both series advance), $\downarrow$ ($x$ advances while $y$ stays at the same point $y_j$) and $\rightarrow$ ($y$ advances while $x$ stays at $x_i$). We encode it as a binary matrix $A\in\{0,1\}^{n\times m}$, with $A_{i,j}=1$ if the path visits cell $(i,j)$, and write $\mathcal A_{n,m}$ for the set of all alignments. The cost of an alignment is the sum of the costs of the cells it visits, $\langle A,\Delta\rangle=\sum_{i,j}A_{i,j}\,\delta_{i,j}$, and DTW is the cost of the cheapest one:
 \begin{equation}
 \mathrm{dtw}(x,y)=\min_{A\in\mathcal A_{n,m}}\langle A,\Delta(x,y)\rangle .
 \end{equation}
 
-\paragraph{Soft-DTW.}
 Soft-DTW replaces this minimum by the \emph{soft-minimum} with smoothing parameter $\gamma>0$,
 \begin{equation}
 \minop(a_1,\dots,a_k)=-\gamma\log\sum_{l=1}^{k}e^{-a_l/\gamma}.
@@ -62,7 +60,6 @@ r_{i,j}=\delta_{i,j}+\minop\{r_{i-1,j-1},\,r_{i-1,j},\,r_{i,j-1}\},\qquad \sdtw(
 \end{equation}
 in $O(nm)$ time.
 
-\paragraph{Gradient (Algorithm 2).}
 We want to understand how much $r_{n,m}=\sdtw(x,y)$ changes if we change the series $x$; mathematically, this is expressed by the gradient $\nabla_x\sdtw(x,y)=\partial r_{n,m}/\partial x$. Since $x$ only enters the recursion through the costs $\delta_{i,j}$, and each $\delta_{i,j}$ is added to $r_{i,j}$ only, thanks to the chain rule we get
 \begin{equation}
 \nabla_x\sdtw(x,y)=\sum_{i,j}\frac{\partial r_{n,m}}{\partial \delta_{i,j}}\,\frac{\partial \delta_{i,j}}{\partial x}=\sum_{i,j}e_{i,j}\,\frac{\partial \delta_{i,j}}{\partial x},\qquad e_{i,j}:=\frac{\partial r_{n,m}}{\partial r_{i,j}} .
@@ -73,10 +70,8 @@ e_{i,j}=\sum_{(k,l)\in\{(i+1,j),(i,j+1),(i+1,j+1)\}} e_{k,l}\,\exp\!\big((r_{k,l
 \end{equation}
 where each exponential is the softmax weight of $r_{i,j}$ inside $r_{k,l}$, and can be read directly from the table $R=[r_{i,j}]$ computed in the forward pass, which is therefore kept in memory. As $\gamma\to0$, $E$ tends to the optimal DTW path $A^\star$, whose discontinuous dependence on $x$ is what soft-DTW removes (Fig.~\ref{fig:E}).
 
-\paragraph{Learning with soft-DTW.}
 These algorithms provide the tools to find a minimum of soft-DTW; note that this is only a local minimum, as the problem is not convex. We can use soft-DTW as a loss (or error) function to compute different objects from a set of time series, such as averages, clusters, classifiers or forecasts. The most popular one is the barycenter (average) of a set of series $y_1,\dots,y_N$, which is computed as the series $x$ that solves $\min_x\sum_i \frac{\lambda_i}{m_i}\sdtw(x,y_i)$; we find it with L-BFGS.
 
-\paragraph{Soft-DTW with a warping penalty (our extension).}
 In the recursion above, the three steps that can enter cell $(i,j)$ all cost the same $\delta_{i,j}$, which means that stretching time is free in soft-DTW. We propose to charge a fixed penalty $\omega\ge0$ for every step that stretches time ($\downarrow$ and $\rightarrow$), while the diagonal step $\searrow$ keeps its cost:
 \begin{equation}
 r_{i,j}=\minop\{r_{i-1,j-1}+\delta_{i,j},\; r_{i-1,j}+\delta_{i,j}+\omega,\; r_{i,j-1}+\delta_{i,j}+\omega\}.
@@ -89,7 +84,6 @@ We call it soft-DTW$_\omega$. Forward and backward passes are unchanged, so the 
 
 We use 13 univariate datasets of the UCR archive~\cite{ucr2018} (loaded with \texttt{tslearn}~\cite{tavenard2020tslearn}, which we also use for the DBA baseline and as a numerical cross-check), chosen to span domains (ECG, motion, image outlines, power demand, synthetic), lengths (24 to 512) and numbers of classes (2 to 60), while keeping the quadratic cost of DTW manageable on a laptop (Table~\ref{tab:data}). The paper used a subset of 79 datasets without stating the selection criterion.
 
-\paragraph{Diagnosis.}
 All series are z-normalised (mean 0, standard deviation 1 per series), as provided by the UCR archives, so pointwise costs $\delta_{i,j}$ are $O(1)$. To check whether the data actually contain the temporal distortions DTW is designed for, we drew 200 random pairs of series of the same class per dataset and measured (i) the global lag maximising their cross-correlation and (ii) the fraction of the Euclidean cost removed by DTW, $1-\mathrm{dtw}/\|x-y\|^2$. Two regimes appear. Datasets such as CBF, Trace, SyntheticControl or ECG200 contain large global shifts (10\% of the pairs are shifted by 15--35\% of the length). Others (Coffee, ArrowHead, Plane) are globally aligned (lag $0$), yet DTW still removes 68--90\% of the Euclidean cost: the variability is made of \emph{local} accelerations and stretches, which a global shift cannot fix but warping can. In every dataset DTW removes between 48\% and 96\% of the within-class Euclidean cost, which supports using an elastic geometry on all of them.
 
 \begin{table}[t]
@@ -162,7 +156,7 @@ Protocol as in the paper: for each dataset, 10 random draws of 10 series of one 
 
 Table~\ref{tab:repro} reproduces the paper's benchmark for barycenters and $k$-means and also adds soft-DTW$_\omega$ to the comparison. For soft-DTW we obtain results similar to the paper's: small $\gamma$ beats DBA almost always, $\gamma=1$ rarely does, and the gap is larger from a random start. For barycenters with a random start the median soft-DTW/DBA loss ratio is $0.86$ ($\gamma=0.01$), down to $0.26$ on Plane ($\gamma=0.1$), where DBA is trapped in a poor local minimum; from the Euclidean mean, which is already a good start, the gain is only $3$--$4\%$ (median ratio $0.97$). For $k$-means the gains shrink further (median ratio $0.97$ for $\gamma\le0.01$). As for the cost, with $\gamma=0.001$ a soft-DTW barycenter takes $14\times$ (and a $k$-means run $16\times$) the time of DBA, because the objective becomes nearly non-smooth and L-BFGS needs many more steps. Conversely, $\gamma=1$ gives visually smooth barycenters and centroids, as in the paper's qualitative figures, which we reproduce in the appendix (Figs.~\ref{fig:bary}--\ref{fig:kmeans}), but losses up to $3\times$ that of DBA, mainly because smoothness and fidelity to DTW pull in opposite directions, and the hard-DTW metric only rewards the latter. Finally, the subgradient baseline is very sensitive to its step size, which inflates the win rates against it.
 
-Our soft-DTW$_\omega$ outperforms soft-DTW from a random start: with $\gamma=\omega=0.1$ its barycenters have an $8\%$ lower DTW loss than soft-DTW ($\gamma=0.01$) and are computed $1.6\times$ faster, since the penalty removes many degenerate paths from the soft-minimum. It beats DBA on fewer datasets than soft-DTW, but by more where DBA is trapped (down to $0.21\times$ its loss). From the Euclidean mean and in $k$-means, plain soft-DTW remains best. Decreasing $\gamma$ brings soft-DTW closer to the DTW loss used for scoring, so its win rate against DBA rises to 100\%; soft-DTW$_\omega$ instead gets closer to DTW plus a warping penalty, a different objective, so its win rate does not improve.
+Our soft-DTW$_\omega$ outperforms soft-DTW from a random start: with $\gamma=\omega=0.1$ its barycenters have an $8\%$ lower DTW loss than soft-DTW ($\gamma=0.01$) and are computed $1.3\times$ faster, since the penalty removes many degenerate paths from the soft-minimum. It beats DBA on fewer datasets than soft-DTW, but by more where DBA is trapped (down to $0.21\times$ its loss). From the Euclidean mean and in $k$-means, plain soft-DTW remains best. Decreasing $\gamma$ brings soft-DTW closer to the DTW loss used for scoring, so its win rate against DBA rises to 100\%; soft-DTW$_\omega$ instead gets closer to DTW plus a warping penalty, a different objective, so its win rate does not improve.
 
 \subsection{Nearest-centroid classification}
 We can also use the barycenter to classify series. Each class is represented by the barycenter of its training series (its centroid), and every new series is given the class of the closest centroid. The paper uses this to compare soft-DTW and DBA barycenters; we add soft-DTW$_\omega$.

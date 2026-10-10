@@ -8,7 +8,7 @@
                                   soft-DTW_omega (gamma = 1) vs DBA
   figures/prior_zero_cost.png     expected alignment E with zero costs: the
                                   data-independent prior of soft-DTW vs soft-DTW_omega
-Usage:  python make_figures.py
+Usage:  python -m experiments.make_figures
 """
 
 import warnings
@@ -19,10 +19,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
-from clustering import dtw_kmeans
-from omega import soft_barycenter
-from softdp import edge_costs, soft_dp
+from softdtw.barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
+from softdtw.clustering import dtw_kmeans
+from softdtw.omega import soft_barycenter
+from softdtw.softdp import edge_costs, soft_dp
 
 warnings.filterwarnings("ignore")
 plt.rcParams.update({"font.size": 9})

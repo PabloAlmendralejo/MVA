@@ -1,4 +1,4 @@
-"""Barycenters for the soft distances of softdp.py.
+"""Barycenters for the soft distances of softdp.py: soft-DTW and soft-DTW_omega.
 
 KINDS: 'dtw' (soft-DTW) and 'adtw' (soft-DTW with a warping penalty omega, i.e. a
 soft version of amerced DTW).
@@ -8,9 +8,9 @@ import numpy as np
 from numba import njit, prange
 from scipy.optimize import minimize
 
-from softdp import soft_distance, soft_distance_value_and_grad, soft_dp_forward
-from barycenter import _weights
-from softdtw import _as_2d
+from .softdp import soft_distance, soft_distance_value_and_grad, soft_dp_forward
+from .barycenter import _weights
+from .core import _as_2d
 
 
 def barycenter_objective(z, Y, kind, gamma, omega=0.0, weights=None):

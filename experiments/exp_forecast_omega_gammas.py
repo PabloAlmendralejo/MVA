@@ -3,7 +3,7 @@ gamma = 0.01 is in exp_forecast_omega.py), omega in {0.1, 1}, random init and
 init from the Euclidean network. Training is deterministic (same seed), so the
 results are directly comparable with results/forecast.csv.
 
-Usage:  python exp_forecast_omega_gammas.py  ->  results/forecast_omega_gammas.csv
+Usage:  python -m experiments.exp_forecast_omega_gammas  ->  results/forecast_omega_gammas.csv
 """
 
 import copy
@@ -12,9 +12,9 @@ import warnings
 
 import pandas as pd
 
-from exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
-from exp_forecast_omega import timing_errors
-from torch_sdtw import SoftDTWLoss
+from experiments.exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
+from experiments.exp_forecast_omega import timing_errors
+from softdtw.torch_sdtw import SoftDTWLoss
 
 GAMMAS = [1.0, 0.1, 0.001]
 OMEGAS = [0.1, 1.0]

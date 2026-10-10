@@ -9,7 +9,7 @@ the maximum and of the minimum of the forecast (|argmax pred - argmax truth|, in
 % of the horizon), which measures predictions that are right in shape but
 wrong in time.
 
-Usage:  python exp_forecast_omega.py  ->  results/forecast_omega.csv,
+Usage:  python -m experiments.exp_forecast_omega  ->  results/forecast_omega.csv,
         results/forecast_omega_examples.npz
 """
 
@@ -20,8 +20,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
-from torch_sdtw import SoftDTWLoss
+from experiments.exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
+from softdtw.torch_sdtw import SoftDTWLoss
 
 GAMMA = 0.01
 LOSSES = {  # label -> omega

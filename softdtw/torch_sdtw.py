@@ -9,8 +9,8 @@ import numpy as np
 import torch
 from numba import njit, prange
 
-from softdp import soft_dp_backward, soft_dp_forward
-from softdtw import sdtw_forward, sdtw_backward
+from .softdp import soft_dp_backward, soft_dp_forward
+from .core import sdtw_forward, sdtw_backward
 
 
 @njit(parallel=True, cache=True)

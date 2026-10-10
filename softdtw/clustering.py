@@ -7,9 +7,9 @@ methods are compared with the hard energy (gamma = 0), as in Table 2.
 import numpy as np
 from numba import njit, prange
 
-from barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
-from omega import soft_barycenter, pairwise_adtw
-from softdtw import sdtw_forward, sqeuclidean_cost
+from .barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
+from .omega import soft_barycenter, pairwise_adtw
+from .core import sdtw_forward, sqeuclidean_cost
 
 
 @njit(parallel=True, cache=True)
