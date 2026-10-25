@@ -22,23 +22,6 @@ Run everything from the repo root so that `import gda` works:
 python experiments/A_sinkhorn/your_script.py
 ```
 
-## Layout
-
-```
-gda/                  shared code -- empty stubs for now, keep it small
-  sinkhorn.py         sinkhorn() + barycenter()                      (A)
-  kernels.py          gaussian_grid_kernel() (B), implicit_heat_kernel() (C)
-experiments/
-  A_sinkhorn/         Sinkhorn + entropic regularisation
-  B_heat_kernel/      heat kernel on grids
-  C_meshes/           meshes & geometry
-report/               LaTeX source for the report (Overleaf)
-  figures/            generated figures, written here by the scripts
-```
-
-Input meshes stay in the folder of whoever uses them and are not committed
-(`.gitignore` drops `*.obj`, `*.ply`, `*.off`, `*.stl`).
-
 ## Who does what
 
 | | topic | lives in |
