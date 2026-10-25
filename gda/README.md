@@ -32,10 +32,12 @@ experiments/
   A_sinkhorn/         Sinkhorn + entropic regularisation
   B_heat_kernel/      heat kernel on grids
   C_meshes/           meshes & geometry
-figures/              generated figures (png/pdf), referenced from the report
-data/meshes/          input meshes (not committed)
 report/               LaTeX source for the report (Overleaf)
+  figures/            generated figures, written here by the scripts
 ```
+
+Input meshes stay in the folder of whoever uses them and are not committed
+(`.gitignore` drops `*.obj`, `*.ply`, `*.off`, `*.stl`).
 
 ## Who does what
 
@@ -45,9 +47,8 @@ report/               LaTeX source for the report (Overleaf)
 | B | heat kernel on regular grids: Gaussian convolution vs. implicit Euler, substeps, cost of the approximation | `experiments/B_heat_kernel/` |
 | C | meshes: cotangent Laplacian, mesh quality, heat leaking between nearby parts, translated-shapes test | `experiments/C_meshes/` |
 
-One folder per person. Each of us also writes the corresponding section
-of the report.
+One folder per person. Each of us also writes the corresponding section of the report.
 
-The files in `gda/` are the only shared code. A fills in
-`sinkhorn.py`, B and C their own kernel. Anything that is only useful for your own
-experiments goes in your own folder, not in `gda/`.
+The files in `gda/` are the only shared code. A fills in `sinkhorn.py`, B and C their own
+kernel. Anything that is only useful for your own experiments goes in your own folder,
+not in `gda/`.

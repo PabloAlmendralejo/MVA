@@ -3,8 +3,10 @@ __pycache__/
 .ipynb_checkpoints/
 .venv/
 *.egg-info/
-data/meshes/*.obj
-data/meshes/*.ply
+*.obj
+*.ply
+*.off
+*.stl
 # LaTeX build files
 report/*.aux
 report/*.log
