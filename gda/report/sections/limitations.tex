@@ -1,0 +1,14 @@
+% OWNER: all three, one paragraph each.
+% Course grading: "limitations" is worth 5/20 points -- be concrete and honest.
+\section{Limitations}
+\label{sec:limitations}
+
+% Candidates:
+% - entropic bias: the distance is not W2, and the blur scales with sqrt(gamma);
+% - numerical overflow of plain Sinkhorn for small gamma, and why log-domain
+%   stabilisation is incompatible with the convolution trick;
+% - the 1-step implicit Euler kernel decays like exp(-|x|/sqrt(t)), i.e. it behaves like
+%   a W1-type cost rather than a squared distance;
+% - heat leaking across geometrically close but geodesically far parts;
+% - dependence on mesh quality and on grid resolution;
+% - entropic sharpening is a heuristic without convergence guarantees.

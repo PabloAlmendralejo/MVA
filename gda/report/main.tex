@@ -1,0 +1,58 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage[numbers]{natbib}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\hypersetup{colorlinks=true, allcolors=blue!60!black}
+\graphicspath{{figures/}{../figures/}}
+
+% ---- notation (use these, so the three sections stay consistent) ----
+\newcommand{\RR}{\mathbb{R}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\muz}{\mu_0}
+\newcommand{\muo}{\mu_1}
+\newcommand{\Wtwo}{\mathcal{W}_2}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\Lap}{\mathcal{L}}            % Laplacian
+\newcommand{\Hker}{\mathcal{H}}           % heat kernel
+\newcommand{\Kker}{\mathbf{K}}            % entropic kernel exp(-d^2/gamma)
+\newcommand{\areas}{\mathbf{a}}           % area weights
+\newcommand{\eps}{\gamma}                 % regularisation parameter
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{Convolutional Wasserstein Distances:\\
+\large A reproduction and critical study}
+\author{Pablo Borrego Ramos \and Abel \textsc{Surname} \and Tom \textsc{Surname}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% 5--8 lines, written last. What the paper does, what we reproduced, what we found.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/method}
+\input{sections/experiments}
+\input{sections/limitations}
+\input{sections/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}
