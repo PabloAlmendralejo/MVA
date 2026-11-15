@@ -21,3 +21,4 @@ def implicit_heat_kernel(L, areas, gamma, substeps=1):
         for _ in range(substeps):
             v = solve(a * v)
         return v
+    return apply_K
