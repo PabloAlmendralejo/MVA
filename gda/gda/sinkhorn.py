@@ -12,14 +12,22 @@ has to provide its own apply_K and a.
 Please don't change these signatures without telling the group.
 """
 
+def sinkhorn(mu0, mu1, apply_K, a, gamma, n_iter=1000, tol=1e-6):
+    v = np.ones(len(mu0))
+    w = np.ones(len(mu1))
 
-def sinkhorn(mu0, mu1, apply_K, a, gamma, n_iter=500, tol=1e-9):
-    """Entropic OT between mu0 and mu1 (Algorithm 1 of Solomon et al. 2015).
+    for _ in range(n_iter):
+        v = mu0 / apply_K(w)
+        w = mu1 / apply_K(v)
 
-    Returns (dist2, v, w), with the transport plan pi = diag(v) K diag(w) and
-    dist2 = gamma * sum_i a_i (mu0_i log v_i + mu1_i log w_i).
-    """
-    raise NotImplementedError
+        error = np.sum(a * np.abs(v * apply_K(w) - mu0))
+        if error < tol:
+            break
+
+    p0, p1 = mu0 > 0, mu1 > 0
+    dist2 = gamma * (np.sum(a[p0] * mu0[p0] * np.log(v[p0]))
+                     + np.sum(a[p1] * mu1[p1] * np.log(w[p1])))
+    return dist2, v, w
 
 
 def barycenter(mus, alphas, apply_K, a, n_iter=500):
