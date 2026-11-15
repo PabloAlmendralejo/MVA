@@ -15,7 +15,9 @@ def gaussian_grid_kernel(shape, gamma, h=1.0):
 
 
 def implicit_heat_kernel(L, areas, gamma, substeps=1):
-    """Mesh / graph: one implicit Euler step of the heat equation,
-    (D_a + t L) u = D_a v with t = gamma / (2 * substeps), prefactored once.
-    `L` is a positive semi-definite (cotangent) Laplacian. Owner: C."""
-    raise NotImplementedError
+    solve = spla.factorized(sp.csc_matrix(sp.diags(a) + gamma / (4 * substeps) * L))
+
+    def apply_K(v):
+        for _ in range(substeps):
+            v = solve(a * v)
+        return v
