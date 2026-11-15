@@ -1,4 +1,4 @@
-# Convolutional Wasserstein Distances — GDA project (MVA 2026)
+# Convolutional Wasserstein Distances
 
 Reproduction of **Solomon, de Goes, Peyré, Cuturi, Butscher, Nguyen, Du, Guibas,
 *Convolutional Wasserstein Distances: Efficient Optimal Transportation on Geometric
