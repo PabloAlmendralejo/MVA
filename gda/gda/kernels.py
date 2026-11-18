@@ -9,9 +9,20 @@ Owners: the grid kernel is B's, the mesh kernel is C's.
 
 
 def gaussian_grid_kernel(shape, gamma, h=1.0):
-    """Regular grid: Gaussian convolution, i.e. the exact heat kernel at time gamma/2.
-    `shape` is the grid shape, `h` the grid spacing. Owner: B."""
-    raise NotImplementedError
+    n1, n2 = shape
+
+    def gauss_1d(m):
+        x = h * np.arange(m)
+        return np.exp(-(x[:, None] - x[None, :]) ** 2 / gamma) / np.sqrt(np.pi * gamma)
+
+    G1, G2 = gauss_1d(n1), gauss_1d(n2)
+    a = h * h
+
+    def apply_K(v):
+        V = (a * v).reshape(n1, n2)
+        return (G1 @ V @ G2.T).ravel()
+
+    return apply_K
 
 
 def heat_kernel(L, a, gamma, substeps=1):
