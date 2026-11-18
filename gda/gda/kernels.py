@@ -14,7 +14,7 @@ def gaussian_grid_kernel(shape, gamma, h=1.0):
     raise NotImplementedError
 
 
-def implicit_heat_kernel(L, areas, gamma, substeps=1):
+def heat_kernel(L, a, gamma, substeps=1):
     solve = spla.factorized(sp.csc_matrix(sp.diags(a) + gamma / (4 * substeps) * L))
 
     def apply_K(v):
