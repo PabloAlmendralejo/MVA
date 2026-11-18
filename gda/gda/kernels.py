@@ -1,13 +1,3 @@
-"""Heat-kernel approximations of exp(-d(x,y)^2 / gamma).
-
-Each function returns `(apply_K, a)` following the convention in sinkhorn.py:
-
-    apply_K(v)[i] == sum_j K[i,j] * a[j] * v[j]
-
-Owners: the grid kernel is B's, the mesh kernel is C's.
-"""
-
-
 def gaussian_grid_kernel(shape, gamma, h=1.0):
     n1, n2 = shape
 
