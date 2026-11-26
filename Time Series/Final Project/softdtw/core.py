@@ -99,8 +99,8 @@ def sdtw_backward(D, R, gamma):
     R_[n + 1, m + 1] = R[n, m]
     E = np.zeros((n + 2, m + 2))
     E[n + 1, m + 1] = 1.0
-    for j in range(m, 0, -1):
-        for i in range(n, 0, -1):
+    for i in range(n, 0, -1):  # row by row: follows the memory layout
+        for j in range(m, 0, -1):
             a = np.exp((R_[i + 1, j] - R_[i, j] - D_[i + 1, j]) / gamma)
             b = np.exp((R_[i, j + 1] - R_[i, j] - D_[i, j + 1]) / gamma)
             c = np.exp((R_[i + 1, j + 1] - R_[i, j] - D_[i + 1, j + 1]) / gamma)
@@ -138,11 +138,62 @@ def jacobian_product_sqeuclidean(x, y, E):
     return 2.0 * (E.sum(1)[:, None] * x - E @ y)
 
 
+_workspace = {}
+
+
+def _buffers(n, m):
+    """Padded cost, R, E and a matmul buffer, reused across calls of the same shape
+    (one shape at a time: series of a dataset share their length)."""
+    if (n, m) not in _workspace:
+        _workspace.clear()
+        _workspace[(n, m)] = (np.zeros((n + 2, m + 2)), np.empty((n + 2, m + 2)),
+                              np.empty((n + 2, m + 2)), np.empty((n, m)))
+    return _workspace[(n, m)]
+
+
+@njit(cache=True)
+def _value_and_alignment(D_, R, E, n, m, gamma):
+    """sdtw_forward + sdtw_backward in place (same arithmetic); D_ is the zero-padded cost."""
+    R[0, :] = np.inf
+    R[:, 0] = np.inf
+    R[0, 0] = 0.0
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            R[i, j] = D_[i, j] + _softmin3(R[i - 1, j - 1], R[i - 1, j], R[i, j - 1], gamma)
+    value = R[n, m]
+    R[:, m + 1] = -np.inf
+    R[n + 1, :] = -np.inf
+    R[n + 1, m + 1] = value
+    E[n + 1, :] = 0.0
+    E[:, m + 1] = 0.0
+    E[n + 1, m + 1] = 1.0
+    for i in range(n, 0, -1):
+        for j in range(m, 0, -1):
+            a = np.exp((R[i + 1, j] - R[i, j] - D_[i + 1, j]) / gamma)
+            b = np.exp((R[i, j + 1] - R[i, j] - D_[i, j + 1]) / gamma)
+            c = np.exp((R[i + 1, j + 1] - R[i, j] - D_[i + 1, j + 1]) / gamma)
+            E[i, j] = a * E[i + 1, j] + b * E[i, j + 1] + c * E[i + 1, j + 1]
+    return value
+
+
 def soft_dtw_value_and_grad(x, y, gamma=1.0):
-    """Returns (dtw_gamma(x, y), gradient wrt x of shape (n, p))."""
+    """Returns (dtw_gamma(x, y), gradient wrt x of shape (n, p)).
+
+    Bit-identical to soft_dtw_alignment + jacobian_product_sqeuclidean, without
+    allocating the n x m matrices at every call (this is the inner loop of the barycenters).
+    """
+    if gamma <= 0:
+        raise ValueError("soft alignment requires gamma > 0; use dtw_path for gamma = 0")
     x, y = _as_2d(x), _as_2d(y)
-    value, E = soft_dtw_alignment(x, y, gamma)
-    return value, jacobian_product_sqeuclidean(x, y, E)
+    n, m = x.shape[0], y.shape[0]
+    D_, R, E, M = _buffers(n, m)
+    D = D_[1:n + 1, 1:m + 1]  # sqeuclidean_cost, written in place
+    np.add((x ** 2).sum(1)[:, None], (y ** 2).sum(1)[None, :], out=D)
+    np.matmul(2.0 * x, y.T, out=M)
+    np.subtract(D, M, out=D)
+    np.maximum(D, 0.0, out=D)
+    value = _value_and_alignment(D_, R, E, n, m, float(gamma))
+    return value, jacobian_product_sqeuclidean(x, y, E[1:n + 1, 1:m + 1])
 
 
 def dtw(x, y):

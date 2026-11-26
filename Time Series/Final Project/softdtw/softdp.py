@@ -107,6 +107,98 @@ def soft_dp(Cd, Cv, Ch, gamma):
 
 
 # ---------------------------------------------------------------------------
+# Fast path for soft-DTW_omega: the same arithmetic as soft_dp on the edge costs of
+# edge_costs(kind='adtw'), without building the cost and usage arrays. Results are
+# bit-identical to the generic engine (tests/test_softdp.py checks it).
+# ---------------------------------------------------------------------------
+
+@njit(cache=True)
+def adtw_value_and_usage(D_, omega, gamma, R, e, W):
+    """Forward and backward soft DP of soft-DTW_omega, in place.
+
+    D_: zero-padded cost (n + 1, m + 1), D_[i, j] = delta_ij for i, j >= 1.
+    R, e: work buffers (n + 1, m + 1); W (n, m) receives the expected usage of each
+    cell (Pd + Pv + Ph, interior). Returns r[n, m]. Requires gamma > 0.
+    """
+    n1, m1 = D_.shape
+    R[0, :] = np.inf
+    R[:, 0] = np.inf
+    R[0, 0] = 0.0
+    for i in range(1, n1):
+        for j in range(1, m1):
+            c = D_[i, j]
+            cw = c + omega
+            R[i, j] = _softmin3(R[i - 1, j - 1] + c, R[i - 1, j] + cw, R[i, j - 1] + cw, gamma)
+    # backward in the order of soft_dp_backward (border cells only feed border cells)
+    e[:, :] = 0.0
+    e[n1 - 1, m1 - 1] = 1.0
+    for i in range(n1 - 1, 0, -1):
+        for j in range(m1 - 1, 0, -1):
+            eij = e[i, j]
+            if eij == 0.0:
+                W[i - 1, j - 1] = 0.0
+                continue
+            c = D_[i, j]
+            cw = c + omega
+            pd = eij * _edge_weight(R[i, j], R[i - 1, j - 1], c, gamma)
+            e[i - 1, j - 1] += pd
+            pv = eij * _edge_weight(R[i, j], R[i - 1, j], cw, gamma)
+            e[i - 1, j] += pv
+            ph = eij * _edge_weight(R[i, j], R[i, j - 1], cw, gamma)
+            e[i, j - 1] += ph
+            W[i - 1, j - 1] = pd + pv + ph
+    return R[n1 - 1, m1 - 1]
+
+
+@njit(cache=True)
+def adtw_forward_value(x, c, gamma, omega, R):
+    """soft-DTW_omega(x, c) with the cost (x_i - c_j)^2 summed over features, as in
+    omega.pairwise_adtw; R is a work buffer of shape (n + 1, m + 1)."""
+    n, m, p = x.shape[0], c.shape[0], x.shape[1]
+    R[0, :] = np.inf
+    R[:, 0] = np.inf
+    R[0, 0] = 0.0
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            d2 = 0.0
+            for k in range(p):
+                diff = x[i - 1, k] - c[j - 1, k]
+                d2 += diff ** 2
+            cw = d2 + omega
+            R[i, j] = _softmin3(R[i - 1, j - 1] + d2, R[i - 1, j] + cw, R[i, j - 1] + cw, gamma)
+    return R[n, m]
+
+
+_workspace = {}
+
+
+def _buffers(n, m):
+    """Work buffers reused across calls of the same shape (one shape per process)."""
+    if (n, m) not in _workspace:
+        _workspace.clear()
+        _workspace[(n, m)] = (np.zeros((n + 1, m + 1)), np.empty((n + 1, m + 1)),
+                              np.empty((n + 1, m + 1)), np.empty((n, m)), np.empty((n, m)))
+    return _workspace[(n, m)]
+
+
+def adtw_value_and_grad(x, y, gamma, omega):
+    """soft-DTW_omega(x, y) and its gradient wrt x; same result as
+    soft_distance_value_and_grad(x, y, gamma, 'adtw', omega=omega), faster."""
+    if gamma <= 0:
+        raise ValueError("the backward pass needs gamma > 0 (use soft_dp_forward for gamma = 0)")
+    x, y = _as_2d(x), _as_2d(y)
+    n, m = x.shape[0], y.shape[0]
+    D_, R, e, W, M = _buffers(n, m)
+    D = D_[1:, 1:]  # sqeuclidean_cost, written in place
+    np.add((x ** 2).sum(1)[:, None], (y ** 2).sum(1)[None, :], out=D)
+    np.matmul(2.0 * x, y.T, out=M)
+    np.subtract(D, M, out=D)
+    np.maximum(D, 0.0, out=D)
+    value = adtw_value_and_usage(D_, float(omega), float(gamma), R, e, W)
+    return value, 2.0 * (W.sum(1)[:, None] * x - W @ y)
+
+
+# ---------------------------------------------------------------------------
 # Distances: each one is a choice of edge costs + the chain rule back to x
 # ---------------------------------------------------------------------------
 
@@ -159,6 +251,8 @@ def soft_distance(x, y, gamma, kind="dtw", **params):
 
 def soft_distance_value_and_grad(x, y, gamma, kind="dtw", **params):
     """Value and gradient wrt x (see expected_warps for d/d omega)."""
+    if kind == "adtw":  # bit-identical fast path
+        return adtw_value_and_grad(x, y, gamma, params.get("omega", 0.0))
     Cd, Cv, Ch = edge_costs(x, y, kind, **params)
     value, P = soft_dp(Cd, Cv, Ch, gamma)
     return value, _grad_x(x, y, P)

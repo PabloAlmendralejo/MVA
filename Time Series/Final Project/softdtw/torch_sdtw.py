@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from numba import njit, prange
 
-from .softdp import soft_dp_backward, soft_dp_forward
+from .softdp import adtw_value_and_usage
 from .core import sdtw_forward, sdtw_backward
 
 
@@ -30,13 +30,11 @@ def _batch_value_and_alignment(D, gamma, omega):
             values[b] = R[n, m]
             E[b] = sdtw_backward(D[b], R, gamma)
         else:
-            Cd = np.full((n + 1, m + 1), np.inf)
-            Cd[1:, 1:] = D[b]
-            Cw = Cd + omega
-            R = soft_dp_forward(Cd, Cw, Cw, gamma)
-            values[b] = R[n, m]
-            Pd, Pv, Ph = soft_dp_backward(Cd, Cw, Cw, R, gamma)
-            E[b] = (Pd + Pv + Ph)[1:, 1:]
+            D_ = np.zeros((n + 1, m + 1))
+            D_[1:, 1:] = D[b]
+            R = np.empty((n + 1, m + 1))
+            e = np.empty((n + 1, m + 1))
+            values[b] = adtw_value_and_usage(D_, omega, gamma, R, e, E[b])
     return values, E
 
 
