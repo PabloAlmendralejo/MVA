@@ -26,7 +26,6 @@ from softdtw.barycenter import dba_barycenter, softdtw_barycenter, subgradient_b
 from softdtw.clustering import dtw_kmeans
 from softdtw.omega import soft_barycenter
 from softdtw.softdp import edge_costs, soft_dp
-from experiments.data_diagnosis import best_lag
 
 warnings.filterwarnings("ignore")
 plt.rcParams.update({"font.size": 9})
@@ -69,11 +68,8 @@ def barycenters_slides_figure():
 
 
 def interpolation_figure():
-    X, y = load("GunPoint")
-    first, second = (np.where(y == c)[0] for c in np.unique(y))
-    # the most shifted pair with one series of each class, so that the interpolations differ clearly
-    i, j = max(((i, j) for i in first for j in second), key=lambda p: best_lag(X[p[0], :, 0], X[p[1], :, 0]))
-    a, b = X[i], X[j]
+    X, _ = load("GunPoint")
+    a, b = X[29], X[25]  # one series of each class, 26 time steps apart: the interpolations differ clearly
     fig, axes = plt.subplots(1, 3, figsize=(12, 2.6), sharey=True)
     for ax, title in zip(axes, ["Euclidean", "soft-DTW, $\\gamma=1$",
                                 "soft-DTW$_\\omega$, $\\gamma=\\omega=1$"]):
