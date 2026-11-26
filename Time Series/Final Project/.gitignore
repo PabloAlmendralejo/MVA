@@ -22,3 +22,7 @@ slides/*.toc
 slides/*.synctex.gz
 slides/*.bbl
 slides/*.blg
+
+results_full/*_parts/
+results_full/logs/
+results_full/*.npz

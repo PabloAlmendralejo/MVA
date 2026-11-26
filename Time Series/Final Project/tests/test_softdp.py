@@ -3,9 +3,13 @@
 import numpy as np
 import pytest
 
-from softdtw.softdp import (edge_costs, expected_warps, soft_distance,
-                    soft_distance_value_and_grad, soft_dp, soft_dp_forward)
 from softdtw import soft_dtw, soft_dtw_alignment
+from softdtw.barycenter import softdtw_barycenter
+from softdtw.omega import barycenter_objective, pairwise_adtw, soft_barycenter
+from softdtw.softdp import (_grad_x, adtw_value_and_grad, edge_costs, expected_warps,
+                            soft_distance, soft_distance_value_and_grad, soft_dp,
+                            soft_dp_forward)
+from softdtw.torch_sdtw import _batch_value_and_alignment
 
 rng = np.random.default_rng(1)
 KINDS = [("dtw", {}), ("adtw", {"omega": 0.7})]
@@ -112,7 +116,6 @@ def test_hard_forward_equals_min_over_paths():
 
 @pytest.mark.parametrize("kind,params", KINDS)
 def test_barycenter_objective_gradient(kind, params):
-    from softdtw.omega import barycenter_objective
     Y = [rng.normal(size=(6, 1)), rng.normal(size=(8, 1)), rng.normal(size=(7, 1))]
     z = rng.normal(size=(5, 1))
     kw = dict(omega=params.get("omega", 0.0))
@@ -127,10 +130,29 @@ def test_barycenter_objective_gradient(kind, params):
 
 
 def test_soft_barycenter_dtw_matches_softdtw_barycenter():
-    from softdtw.barycenter import softdtw_barycenter
-    from softdtw.omega import soft_barycenter
     Y = [rng.normal(size=(12, 1)) for _ in range(4)]
     init = rng.normal(size=(12, 1))
     a = soft_barycenter(Y, "dtw", 0.1, init)
     b = softdtw_barycenter(Y, 0.1, init)
     assert np.allclose(a, b, atol=1e-6)
+
+
+@pytest.mark.parametrize("n,m,p", [(1, 4, 1), (7, 11, 1), (30, 20, 2), (25, 25, 3)])
+@pytest.mark.parametrize("gamma,omega", [(1e-3, 1.0), (0.3, 0.5), (5.0, 0.1), (0.1, 0.0)])
+def test_adtw_fast_path_bit_identical(n, m, p, gamma, omega):
+    """The fast soft-DTW_omega kernels give exactly the numbers of the generic engine."""
+    x, y = rng.normal(size=(n, p)), rng.normal(size=(m, p))
+    Cd, Cv, Ch = edge_costs(x, y, "adtw", omega=omega)
+    value, P = soft_dp(Cd, Cv, Ch, gamma)
+    v, g = adtw_value_and_grad(x, y, gamma, omega)
+    assert v == value and np.array_equal(g, _grad_x(x, y, P))
+    # prediction: generic forward on the costs (x_i - y_j)^2 used by pairwise_adtw
+    D = ((x[:, None, :] - y[None, :, :]) ** 2).sum(2)
+    Cd = np.full((n + 1, m + 1), np.inf)
+    Cd[1:, 1:] = D
+    assert pairwise_adtw(x[None], y[None], gamma, omega)[0, 0] == soft_dp_forward(Cd, Cd + omega, Cd + omega, gamma)[-1, -1]
+    # PyTorch loss (omega > 0 branch): values and cell usages on a given cost matrix
+    if omega > 0:
+        vals, E = _batch_value_and_alignment(D[None], gamma, omega)
+        value, (Pd, Pv, Ph) = soft_dp(Cd, Cd + omega, Cd + omega, gamma)
+        assert vals[0] == value and np.array_equal(E[0], (Pd + Pv + Ph)[1:, 1:])

@@ -1,0 +1,8 @@
+method,mean_acc,pct_datasets_better,pct_datasets_tied,pct_datasets_worse,mean_diff,wilcoxon_p
+soft-DTW_15_gammas,0.7229,51.9,21.5,26.6,0.0011,0.0155
+soft-DTW_5_gammas,0.7218,,,,,
+soft-DTW_omega_5_gammas_x_2_omegas,0.7213,55.7,3.8,40.5,-0.0005,0.4985
+soft-DTW_omega_0.1_5_gammas,0.7175,49.4,8.9,41.8,-0.0042,0.9066
+soft-DTW_omega_1_5_gammas,0.7105,40.5,5.1,54.4,-0.0112,0.0612
+DBA,0.6709,10.1,6.3,83.5,-0.0509,0.0
+Euclidean_NC,0.6061,12.7,1.3,86.1,-0.1157,0.0

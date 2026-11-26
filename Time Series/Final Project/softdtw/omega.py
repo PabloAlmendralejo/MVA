@@ -8,7 +8,7 @@ import numpy as np
 from numba import njit, prange
 from scipy.optimize import minimize
 
-from .softdp import soft_distance, soft_distance_value_and_grad, soft_dp_forward
+from .softdp import adtw_forward_value, soft_distance, soft_distance_value_and_grad
 from .barycenter import _weights
 from .core import _as_2d
 
@@ -49,13 +49,9 @@ def _pairwise_adtw(X, C, gamma, omega):
     B, m, _ = C.shape
     out = np.empty((A, B))
     for a in prange(A):
+        R = np.empty((n + 1, m + 1))  # reused for every centroid
         for b in range(B):
-            Cd = np.full((n + 1, m + 1), np.inf)
-            for i in range(n):
-                for j in range(m):
-                    Cd[i + 1, j + 1] = np.sum((X[a, i] - C[b, j]) ** 2)
-            Cw = Cd + omega
-            out[a, b] = soft_dp_forward(Cd, Cw, Cw, gamma)[n, m]
+            out[a, b] = adtw_forward_value(X[a], C[b], gamma, omega, R)
     return out
 
 

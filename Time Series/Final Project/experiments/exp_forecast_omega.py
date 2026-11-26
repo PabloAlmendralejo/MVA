@@ -11,17 +11,25 @@ wrong in time.
 
 Usage:  python -m experiments.exp_forecast_omega  ->  results/forecast_omega.csv,
         results/forecast_omega_examples.npz
+
+Full-paper mode (SOFTDTW_FULL=1): the 76 datasets and every gamma of Table 3, losses
+Euclidean, soft-DTW and soft-DTW_omega (omega in {0.1, 1}), both inits. Training is
+deterministic, so the Euclidean and soft-DTW rows reproduce results_full/forecast.csv.
+Usage:  python -m experiments.exp_forecast_omega [n_jobs]  ->  results_full/forecast_omega.csv
 """
 
 import copy
 import os
+import sys
 import warnings
 
 import numpy as np
 import pandas as pd
 
-from experiments.exp_forecast import DATASETS, euclidean_loss, evaluate, load, mlp, train
 from softdtw.torch_sdtw import SoftDTWLoss
+from experiments.datasets import FULL
+from experiments.exp_forecast import (DATASETS, GAMMAS, euclidean_loss, evaluate, load, mlp,
+                                      run_all, train)
 
 GAMMA = 0.01
 LOSSES = {  # label -> omega
@@ -29,6 +37,7 @@ LOSSES = {  # label -> omega
     "soft-DTW_omega 0.1": 0.1,
     "soft-DTW_omega 1": 1.0,
 }
+OMEGAS = [0.1, 1.0]
 
 
 def timing_errors(P, T):
@@ -53,6 +62,7 @@ def run(name):
     base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
     preds["Euclidean"] = record("Euclidean", "random", base)
     record("Euclidean", "euclidean", base)
+
     for label, omega in LOSSES.items():
         for init in ("random", "euclidean"):
             model = mlp(Xin.shape[1], Xout.shape[1]) if init == "random" else copy.deepcopy(base)
@@ -60,10 +70,44 @@ def run(name):
             P = record(label, init, model)
             if init == "random":
                 preds[label] = P
+
     return rows, preds, Tin.numpy(), T
 
 
-if __name__ == "__main__":
+def run_full(name):
+    """Full mode: Euclidean, soft-DTW and soft-DTW_omega for every gamma, both inits."""
+    Xin, Xout, Tin, Tout = load(name)
+    T = Tout.numpy()
+    rows, preds = [], {}
+
+    def record(label, gamma, omega, init, model):
+        e, d, P = evaluate(model, Tin, Tout)
+        tmax, tmin = timing_errors(P, T)
+        rows.append(dict(dataset=name, init=init, model=label, gamma=gamma, omega=omega,
+                         euclid=e, dtw=d, t_max_err=tmax, t_min_err=tmin))
+        return P
+
+    base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
+    preds["Euclidean"] = record("Euclidean", np.nan, np.nan, "random", base)
+    record("Euclidean", np.nan, np.nan, "euclidean", base)
+
+    for gamma in GAMMAS:
+        for label, omega in [("soft-DTW", 0.0)] + [("soft-DTW_omega", w) for w in OMEGAS]:
+            for init in ("random", "euclidean"):
+                model = mlp(Xin.shape[1], Xout.shape[1]) if init == "random" else copy.deepcopy(base)
+                model = train(model, SoftDTWLoss(gamma, omega=omega), Xin, Xout)
+                P = record(label, gamma, omega if omega > 0 else np.nan, init, model)
+                if init == "random":
+                    preds[f"{label} {gamma} {omega}"] = P
+
+    return rows, preds, Tin.numpy(), T
+
+
+if __name__ == "__main__" and FULL:
+    warnings.filterwarnings("ignore")
+    run_all(int(sys.argv[1]) if len(sys.argv) > 1 else 1, run_full, "forecast_omega")
+
+elif __name__ == "__main__":
     warnings.filterwarnings("ignore")
     os.makedirs("results/forecast_omega_parts", exist_ok=True)
     for name in DATASETS:  # checkpointed per dataset

@@ -1,0 +1,21 @@
+metric,init,model,ours_rank,paper_rank,median_error_ratio_vs_euclidean_net
+dtw,random,Euclidean,3.66,3.46,1.0
+dtw,random,soft-DTW gamma=1.0,3.88,3.55,0.958
+dtw,random,soft-DTW gamma=0.1,2.53,3.33,0.841
+dtw,random,soft-DTW gamma=0.01,2.36,2.79,0.808
+dtw,random,soft-DTW gamma=0.001,2.58,1.87,0.802
+dtw,euclidean,Euclidean,3.61,4.21,1.0
+dtw,euclidean,soft-DTW gamma=1.0,4.11,3.96,1.024
+dtw,euclidean,soft-DTW gamma=0.1,3.13,3.42,0.913
+dtw,euclidean,soft-DTW gamma=0.01,2.3,2.12,0.81
+dtw,euclidean,soft-DTW gamma=0.001,1.86,1.29,0.792
+euclid,random,Euclidean,1.37,1.05,1.0
+euclid,random,soft-DTW gamma=1.0,2.21,2.41,1.342
+euclid,random,soft-DTW gamma=0.1,3.49,3.42,1.599
+euclid,random,soft-DTW gamma=0.01,3.89,4.13,2.179
+euclid,random,soft-DTW gamma=0.001,4.04,3.99,2.404
+euclid,euclidean,Euclidean,1.99,1.7,1.0
+euclid,euclidean,soft-DTW gamma=1.0,2.96,2.99,1.052
+euclid,euclidean,soft-DTW gamma=0.1,3.01,3.38,1.068
+euclid,euclidean,soft-DTW gamma=0.01,3.22,3.64,1.06
+euclid,euclidean,soft-DTW gamma=0.001,3.82,3.29,1.133
