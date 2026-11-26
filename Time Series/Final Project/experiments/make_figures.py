@@ -68,8 +68,8 @@ def barycenters_slides_figure():
 
 
 def interpolation_figure():
-    X, y = load("GunPoint")
-    a, b = X[np.where(y == np.unique(y)[0])[0][0]], X[np.where(y == np.unique(y)[1])[0][0]]
+    X, _ = load("GunPoint")
+    a, b = X[29], X[25]  # one series of each class, 26 time steps apart: the interpolations differ clearly
     fig, axes = plt.subplots(1, 3, figsize=(12, 2.6), sharey=True)
     for ax, title in zip(axes, ["Euclidean", "soft-DTW, $\\gamma=1$",
                                 "soft-DTW$_\\omega$, $\\gamma=\\omega=1$"]):
