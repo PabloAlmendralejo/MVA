@@ -25,6 +25,7 @@ def run(name):
     T = Tout.numpy()
     base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
     rows = []
+
     for gamma in GAMMAS:
         for omega in OMEGAS:
             for init in ("random", "euclidean"):
@@ -34,17 +35,20 @@ def run(name):
                 tmax, tmin = timing_errors(P, T)
                 rows.append(dict(dataset=name, init=init, model="soft-DTW_omega", gamma=gamma,
                                  omega=omega, euclid=e, dtw=d, t_max_err=tmax, t_min_err=tmin))
+
     return rows
 
 
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     os.makedirs("results/forecast_omega_gammas_parts", exist_ok=True)
+
     for name in DATASETS:  # checkpointed per dataset
         part = f"results/forecast_omega_gammas_parts/{name}.csv"
         if os.path.exists(part):
             continue
         pd.DataFrame(run(name)).to_csv(part, index=False)
         print(name, "done", flush=True)
+
     pd.concat([pd.read_csv(f"results/forecast_omega_gammas_parts/{d}.csv") for d in DATASETS]).to_csv(
         "results/forecast_omega_gammas.csv", index=False)

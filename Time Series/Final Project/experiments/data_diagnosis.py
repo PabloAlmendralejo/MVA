@@ -12,6 +12,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from tslearn.datasets import UCR_UEA_datasets
 
 from softdtw import dtw
 
@@ -22,7 +23,6 @@ N_PAIRS = 200
 
 
 def load_all(name):
-    from tslearn.datasets import UCR_UEA_datasets
     X, y, Xt, yt = UCR_UEA_datasets(use_cache=True).load_dataset(name)
     return (np.concatenate([X, Xt])[..., 0].astype(np.float64),
             np.concatenate([y, yt]), len(X), len(Xt))

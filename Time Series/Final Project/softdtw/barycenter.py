@@ -14,6 +14,7 @@ dba_barycenter       : DBA (Petitjean et al., 2011), tslearn implementation
 
 import numpy as np
 from scipy.optimize import minimize
+from tslearn.barycenters import dtw_barycenter_averaging_petitjean
 
 from .core import (_as_2d, dtw, dtw_value_and_subgrad, soft_dtw_value_and_grad)
 
@@ -102,7 +103,6 @@ def subgradient_barycenter(Y, init, weights=None, max_iter=100, step0=1.0):
 
 def dba_barycenter(Y, init, weights=None, max_iter=100):
     """DBA (Petitjean et al. 2011) from tslearn, same init and iteration budget."""
-    from tslearn.barycenters import dtw_barycenter_averaging_petitjean
     Y = [_as_2d(y) for y in Y]
     return dtw_barycenter_averaging_petitjean(
         Y, init_barycenter=_as_2d(init), max_iter=max_iter, tol=1e-12, weights=weights)

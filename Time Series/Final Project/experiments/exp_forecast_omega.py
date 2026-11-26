@@ -62,6 +62,7 @@ def run(name):
     base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
     preds["Euclidean"] = record("Euclidean", "random", base)
     record("Euclidean", "euclidean", base)
+
     for label, omega in LOSSES.items():
         for init in ("random", "euclidean"):
             model = mlp(Xin.shape[1], Xout.shape[1]) if init == "random" else copy.deepcopy(base)
@@ -69,6 +70,7 @@ def run(name):
             P = record(label, init, model)
             if init == "random":
                 preds[label] = P
+
     return rows, preds, Tin.numpy(), T
 
 
@@ -88,6 +90,7 @@ def run_full(name):
     base = train(mlp(Xin.shape[1], Xout.shape[1]), euclidean_loss, Xin, Xout)
     preds["Euclidean"] = record("Euclidean", np.nan, np.nan, "random", base)
     record("Euclidean", np.nan, np.nan, "euclidean", base)
+
     for gamma in GAMMAS:
         for label, omega in [("soft-DTW", 0.0)] + [("soft-DTW_omega", w) for w in OMEGAS]:
             for init in ("random", "euclidean"):
@@ -96,12 +99,14 @@ def run_full(name):
                 P = record(label, gamma, omega if omega > 0 else np.nan, init, model)
                 if init == "random":
                     preds[f"{label} {gamma} {omega}"] = P
+
     return rows, preds, Tin.numpy(), T
 
 
 if __name__ == "__main__" and FULL:
     warnings.filterwarnings("ignore")
     run_all(int(sys.argv[1]) if len(sys.argv) > 1 else 1, run_full, "forecast_omega")
+
 elif __name__ == "__main__":
     warnings.filterwarnings("ignore")
     os.makedirs("results/forecast_omega_parts", exist_ok=True)

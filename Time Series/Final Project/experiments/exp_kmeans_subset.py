@@ -77,11 +77,14 @@ def run(name, init_name, seed, method, gamma, omega):
 if __name__ == "__main__":
     n_jobs = int(sys.argv[1]) if len(sys.argv) > 1 else 4
     size = {}
+
     for d in DATASETS:  # downloads each dataset once; cost ~ n_train^1.3 * length^2
         X, _ = load_train(d)
         size[d] = X.shape[0] ** 1.3 * X.shape[1] ** 2
+
     jobs = [(d, i, s, m, g, w) for d in DATASETS for i, s in INITS for m, g, w in CONFIGS]
     jobs.sort(key=lambda j: -size[j[0]] * RATE.get((j[3], j[4]), 3.0 if j[5] == 0.1 else 2.2))
+
     out = Parallel(n_jobs=n_jobs, verbose=10)(
         delayed(checkpointed)(part(*j), lambda j=j: run(*j)) for j in jobs)
     df = pd.DataFrame([r for rows in out for r in rows])

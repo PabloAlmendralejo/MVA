@@ -1,14 +1,17 @@
 """Correctness checks for softdtw/core.py and softdtw/torch_sdtw.py.  Run:  pytest tests -v"""
 
 import itertools
+from math import comb
 
 import numpy as np
 import pytest
 import torch
 
-from softdtw import (dtw, dtw_path, soft_dtw, soft_dtw_alignment,
+from softdtw import (dtw, dtw_path, sdtw_backward, sdtw_forward, soft_dtw, soft_dtw_alignment,
                      soft_dtw_value_and_grad, sqeuclidean_cost)
+from softdtw.softdp import soft_distance_value_and_grad
 from softdtw.torch_sdtw import SoftDTWLoss, soft_dtw_torch_naive
+from softdtw.torch_sdtw_diag import SoftDTWLossDiag
 
 rng = np.random.default_rng(0)
 
@@ -35,7 +38,6 @@ def delannoy(a, b):
 
 
 def _comb(n, k):
-    from math import comb
     return comb(n, k)
 
 
@@ -72,7 +74,6 @@ def test_path_count_is_delannoy():
 
 def test_worked_example_2x2():
     """Delta = [[1,3],[2,1]], gamma = 1: three paths with costs 2, 4, 5."""
-    from softdtw import sdtw_backward, sdtw_forward
     D = np.array([[1.0, 3.0], [2.0, 1.0]])
     R = sdtw_forward(D, 1.0)
     expected = 1.0 - np.log(np.exp(-1) + np.exp(-4) + np.exp(-3))
@@ -177,7 +178,6 @@ def test_torch_batch_and_chain_rule():
 @pytest.mark.parametrize("gamma", [0.01, 0.1, 1.0])
 @pytest.mark.parametrize("n,m", [(1, 1), (5, 9), (12, 7)])
 def test_antidiagonal_torch_matches_numba(n, m, gamma):
-    from softdtw.torch_sdtw_diag import SoftDTWLossDiag
     B = 3
     x = torch.tensor(rng.normal(size=(B, n, 2)), requires_grad=True)
     y = torch.tensor(rng.normal(size=(B, m, 2)), requires_grad=True)
@@ -193,7 +193,6 @@ def test_antidiagonal_torch_matches_numba(n, m, gamma):
 
 @pytest.mark.parametrize("omega", [0.0, 0.5])
 def test_torch_loss_omega_matches_engine(omega):
-    from softdtw.softdp import soft_distance_value_and_grad
     kind, params = ("adtw", {"omega": omega}) if omega > 0 else ("dtw", {})
     B, gamma = 3, 0.3
     X, Y = rng.normal(size=(B, 7, 2)), rng.normal(size=(B, 9, 2))

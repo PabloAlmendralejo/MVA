@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import torch
 from joblib import Parallel, delayed
+
 from tslearn.datasets import UCR_UEA_datasets
 
 from softdtw.clustering import pairwise_sdtw
@@ -100,9 +101,11 @@ def run_and_save(name, n_threads, run_fn, folder):
     warnings.filterwarnings("ignore")
     torch.set_num_threads(n_threads)
     numba.set_num_threads(n_threads)
+
     part = f"{OUT}/{folder}/{name}"
     if os.path.exists(part + ".csv"):  # finished in a previous run
         return
+
     rows, preds, Tin, Tout = run_fn(name)
     k = slice(0, 5)  # keep a few test series for the figures
     np.savez(part + ".tmp.npz", input=Tin[k], truth=Tout[k], **{m: P[k] for m, P in preds.items()})
@@ -117,22 +120,27 @@ def run_all(n_jobs, run_fn, name):
     folder = f"{name}_parts"
     os.makedirs(f"{OUT}/{folder}", exist_ok=True)
     cost = {}
+
     for d in DATASETS:  # downloads each dataset once
         Xin, Xout, _, _ = load(d)
         cost[d] = Xin.shape[0] * Xout.shape[1] ** 2
+
     order = sorted(DATASETS, key=lambda d: -cost[d])
     # Full-batch training needs about 40 * cost bytes: datasets above 1 GB run alone with
     # every thread, the others in at most MAX_WORKERS processes.
     big = [d for d in order if 40 * cost[d] > 1e9]
+
     for d in big:
         print(f"{d}: {40 * cost[d] / 1e9:.1f} GB, run alone", flush=True)
         run_and_save(d, os.cpu_count() or 4, run_fn, folder)
+
     n_jobs = min(n_jobs, MAX_WORKERS)
     n_threads = max(1, (os.cpu_count() or 4) // n_jobs)
     Parallel(n_jobs=n_jobs, verbose=10)(
         delayed(run_and_save)(d, n_threads, run_fn, folder) for d in order if d not in big)
     pd.concat([pd.read_csv(f"{OUT}/{folder}/{d}.csv") for d in DATASETS]).to_csv(
         f"{OUT}/{name}.csv", index=False)
+
     np.savez(f"{OUT}/{name}_examples.npz",
              **{f"{d}/{k}": v for d in DATASETS for k, v in np.load(f"{OUT}/{folder}/{d}.npz").items()})
 

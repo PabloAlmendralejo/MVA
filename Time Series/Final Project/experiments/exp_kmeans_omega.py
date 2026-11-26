@@ -29,6 +29,7 @@ def run(name, init_name, seed):
     part = f"results/kmeans_omega_parts/{name}_{init_name}_{seed}.csv"
     if os.path.exists(part):
         return pd.read_csv(part).to_dict("records")
+
     warnings.filterwarnings("ignore")
     X, y = load_train(name)
     k = len(np.unique(y))
@@ -36,6 +37,7 @@ def run(name, init_name, seed):
     init = (X[rng.choice(len(X), k, replace=False)] if init_name == "random"
             else euclidean_kmeans_init(X, k, seed))
     rows = []
+
     for gamma in GAMMAS:
         for omega in OMEGAS:
             t0 = time.perf_counter()
@@ -43,6 +45,7 @@ def run(name, init_name, seed):
             rows.append(dict(dataset=name, init=init_name, seed=seed, method="soft-DTW_omega",
                              gamma=gamma, omega=omega, energy=kmeans_energy(X, C),
                              time=time.perf_counter() - t0))
+
     os.makedirs(os.path.dirname(part), exist_ok=True)
     pd.DataFrame(rows).to_csv(part, index=False)
     return rows

@@ -27,6 +27,8 @@ DATASETS = ["ItalyPowerDemand", "TwoLeadECG", "ECG200", "CBF", "ECGFiveDays",
 GAMMAS = [1.0, 0.1, 0.01, 0.001]
 N_MAX, SEEDS = 100, [0, 1, 2]
 DATASETS_RANDOM = DATASETS_EUCLIDEAN = DATASETS
+CONFIGS = [("soft-DTW", g) for g in GAMMAS] + [("DBA", None), ("subgradient", None)]
+
 if FULL:  # paper: whole training split, one random init per dataset
     N_MAX, SEEDS = None, [0]
     DATASETS_RANDOM, DATASETS_EUCLIDEAN = KMEANS_RANDOM, KMEANS_EUCLIDEAN
@@ -45,19 +47,18 @@ def euclidean_kmeans_init(X, k, seed):
     return km.cluster_centers_.reshape(k, *X.shape[1:])
 
 
-CONFIGS = [("soft-DTW", g) for g in GAMMAS] + [("DBA", None), ("subgradient", None)]
-
-
 def run(name, init_name, seed, method, gamma):
     """One (dataset, init, method) job: the init depends only on (dataset, init, seed)."""
     warnings.filterwarnings("ignore")
     X, y = load_train(name)
     k = len(np.unique(y))
     rng = np.random.default_rng(seed)
-    init = (X[rng.choice(len(X), k, replace=False)] if init_name == "random"
-            else euclidean_kmeans_init(X, k, seed))
+
+    init = (X[rng.choice(len(X), k, replace=False)] if init_name == "random" else euclidean_kmeans_init(X, k, seed))
+
     t0 = time.perf_counter()
     C, _ = dtw_kmeans(X, k, method, init, gamma=gamma)
+
     return [dict(dataset=name, init=init_name, seed=seed, method=method,
                  gamma=gamma, energy=kmeans_energy(X, C), time=time.perf_counter() - t0)]
 
@@ -65,9 +66,11 @@ def run(name, init_name, seed, method, gamma):
 if __name__ == "__main__":
     n_jobs = int(sys.argv[1]) if len(sys.argv) > 1 else 4
     size = {}
+
     for d in sorted(set(DATASETS_RANDOM) | set(DATASETS_EUCLIDEAN)):  # downloads each dataset once
         X, _ = load_train(d)
         size[d] = X.shape[0] * X.shape[1] ** 2
+
     jobs = [(d, "random", s) for d in DATASETS_RANDOM for s in SEEDS] + \
            [(d, "euclidean", 0) for d in DATASETS_EUCLIDEAN]
     jobs = [(d, i, s, m, g) for d, i, s in jobs for m, g in CONFIGS]
@@ -76,6 +79,7 @@ if __name__ == "__main__":
         delayed(checkpointed)(f"{OUT}/kmeans_parts/{d}_{i}_{s}_{m}_{g}.csv",
                               lambda j=(d, i, s, m, g): run(*j))
         for d, i, s, m, g in jobs)
+
     df = pd.DataFrame([r for rows in out for r in rows])
     df.to_csv(f"{OUT}/kmeans.csv", index=False)
     print(df.groupby(["init", "method", "gamma"], dropna=False)["energy"].mean())

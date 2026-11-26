@@ -100,16 +100,19 @@ def run_rep(name, rep, seed=0):
     warnings.filterwarnings("ignore")
     X, y = load(name)
     rng = np.random.default_rng(seed)
+
     for r in range(rep + 1):
         cls = rng.choice(np.unique(y))
         members = np.where(y == cls)[0]
         idx = rng.choice(members, min(N_SERIES, len(members)), replace=False)
         Y = [X[i] for i in idx]
         inits = {"random": rng.normal(size=Y[0].shape), "euclidean": euclidean_mean(Y)}
+
     rest = np.setdiff1d(members, idx)
     held = np.random.default_rng(1000 + rep).choice(rest, min(N_HELDOUT, len(rest)), replace=False)
     Yh = [X[i] for i in held]
     rows = []
+
     for init_name, init in inits.items():
         runs = [("DBA", "dba", np.nan, np.nan, lambda: dba_barycenter(Y, init, max_iter=MAX_ITER))]
         runs += [(label, kind, gamma, omega,
@@ -125,6 +128,7 @@ def run_rep(name, rep, seed=0):
                              train_loss=dtw_barycenter_loss(xb, Y),
                              heldout_loss=dtw_barycenter_loss(xb, Yh) if Yh else np.nan,
                              time=time.perf_counter() - t0))
+
     return rows
 
 
@@ -136,9 +140,11 @@ if __name__ == "__main__" and FULL:
         delayed(checkpointed)(f"{OUT}/barycenters_omega_parts/{d}_{r}.csv",
                               lambda d=d, r=r: run_rep(d, r))
         for d, r in jobs)
+
     df = pd.DataFrame([r for rows in out for r in rows])
     df.to_csv(f"{OUT}/barycenters_omega.csv", index=False)
     print(df.groupby(["init", "method", "gamma", "omega"], dropna=False)[["train_loss", "heldout_loss"]].mean())
+
 elif __name__ == "__main__":
     n_jobs = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     extra = len(sys.argv) > 2 and sys.argv[2] == "extra"
