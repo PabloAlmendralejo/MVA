@@ -1,4 +1,4 @@
-"""Table 3 / Figure 1 of the paper (reduced): multistep-ahead prediction with an MLP.
+"""Table 3 / Figure 1 of the paper: multistep-ahead prediction with an MLP.
 
 Protocol (Section 4.4): UCR train/test splits; the first 60% of each series is the
 input, the remaining 40% the output (class labels ignored). One-hidden-layer MLP
@@ -8,29 +8,38 @@ soft-DTW models: random, or the weights of the Euclidean-trained MLP.
 Test metrics: Euclidean (sum of squares per series) and hard DTW; for each
 dataset and metric the 5 models are ranked, then ranks are averaged.
 
-Usage:  python -m experiments.exp_forecast  ->  results/forecast.csv, results/forecast_examples.npz
+Usage:  python -m experiments.exp_forecast [n_jobs]  ->  results/forecast.csv, results/forecast_examples.npz
+        (SOFTDTW_FULL=1: the 76 datasets of the paper, in results_full/)
 """
 
 import copy
+import os
+import sys
 import warnings
 
+import numba
 import numpy as np
 import pandas as pd
 import torch
+from joblib import Parallel, delayed
+from tslearn.datasets import UCR_UEA_datasets
 
 from softdtw.clustering import pairwise_sdtw
 from softdtw.torch_sdtw import SoftDTWLoss
+from experiments.datasets import FORECAST, FULL, OUT
 
 DATASETS = ["ItalyPowerDemand", "SyntheticControl", "TwoLeadECG", "ECG200",
             "CBF", "ECGFiveDays", "GunPoint", "Plane", "ArrowHead", "Coffee",
             "Trace", "MedicalImages", "ShapesAll"]
+if FULL:
+    DATASETS = FORECAST
 GAMMAS = [1.0, 0.1, 0.01, 0.001]
 HIDDEN, EPOCHS, LR, SEED = 256, 400, 1e-3, 0
+MAX_WORKERS = 6  # parallel datasets, to fit in 16 GB of RAM
 torch.set_num_threads(4)
 
 
 def load(name):
-    from tslearn.datasets import UCR_UEA_datasets
     X, _, Xt, _ = UCR_UEA_datasets(use_cache=True).load_dataset(name)
     X, Xt = X[..., 0].astype(np.float64), Xt[..., 0].astype(np.float64)
     t = int(round(0.6 * X.shape[1]))
@@ -80,28 +89,54 @@ def run(name):
             model = mlp(Xin.shape[1], Xout.shape[1]) if init == "random" else copy.deepcopy(base)
             model = train(model, SoftDTWLoss(g), Xin, Xout)
             e, d, P = evaluate(model, Tin, Tout)
-            rows.append(dict(dataset=name, init=init, model=f"soft-DTW", gamma=g, euclid=e, dtw=d))
+            rows.append(dict(dataset=name, init=init, model="soft-DTW", gamma=g, euclid=e, dtw=d))
             if init == "random":
                 preds[f"soft-DTW {g}"] = P
     return rows, preds, Tin.numpy(), Tout.numpy()
 
 
-if __name__ == "__main__":
-    import os
+def run_and_save(name, n_threads, run_fn, folder):
+    """One dataset in a worker process; its csv, written last and atomically, marks it done."""
     warnings.filterwarnings("ignore")
-    os.makedirs("results/forecast_parts", exist_ok=True)
-    for name in DATASETS:  # each dataset is checkpointed; finished ones are skipped
-        part = f"results/forecast_parts/{name}"
-        if os.path.exists(part + ".csv"):
-            continue
-        rows, preds, Tin, Tout = run(name)
-        k = slice(0, 5)  # keep a few test series for the figures
-        ex = {"input": Tin[k], "truth": Tout[k], **{m: P[k] for m, P in preds.items()}}
-        np.savez(part + ".npz", **ex)
-        pd.DataFrame(rows).to_csv(part + ".csv", index=False)
-        print(name, "done", flush=True)
-    pd.concat([pd.read_csv(f"results/forecast_parts/{d}.csv") for d in DATASETS]).to_csv(
-        "results/forecast.csv", index=False)
-    examples = {f"{d}/{key}": v for d in DATASETS
-                for key, v in np.load(f"results/forecast_parts/{d}.npz").items()}
-    np.savez("results/forecast_examples.npz", **examples)
+    torch.set_num_threads(n_threads)
+    numba.set_num_threads(n_threads)
+    part = f"{OUT}/{folder}/{name}"
+    if os.path.exists(part + ".csv"):  # finished in a previous run
+        return
+    rows, preds, Tin, Tout = run_fn(name)
+    k = slice(0, 5)  # keep a few test series for the figures
+    np.savez(part + ".tmp.npz", input=Tin[k], truth=Tout[k], **{m: P[k] for m, P in preds.items()})
+    os.replace(part + ".tmp.npz", part + ".npz")
+    pd.DataFrame(rows).to_csv(part + ".tmp", index=False)
+    os.replace(part + ".tmp", part + ".csv")
+    print(name, "done", flush=True)
+
+
+def run_all(n_jobs, run_fn, name):
+    """Every dataset, checkpointed in OUT/<name>_parts/  ->  OUT/<name>.csv, OUT/<name>_examples.npz"""
+    folder = f"{name}_parts"
+    os.makedirs(f"{OUT}/{folder}", exist_ok=True)
+    cost = {}
+    for d in DATASETS:  # downloads each dataset once
+        Xin, Xout, _, _ = load(d)
+        cost[d] = Xin.shape[0] * Xout.shape[1] ** 2
+    order = sorted(DATASETS, key=lambda d: -cost[d])
+    # Full-batch training needs about 40 * cost bytes: datasets above 1 GB run alone with
+    # every thread, the others in at most MAX_WORKERS processes.
+    big = [d for d in order if 40 * cost[d] > 1e9]
+    for d in big:
+        print(f"{d}: {40 * cost[d] / 1e9:.1f} GB, run alone", flush=True)
+        run_and_save(d, os.cpu_count() or 4, run_fn, folder)
+    n_jobs = min(n_jobs, MAX_WORKERS)
+    n_threads = max(1, (os.cpu_count() or 4) // n_jobs)
+    Parallel(n_jobs=n_jobs, verbose=10)(
+        delayed(run_and_save)(d, n_threads, run_fn, folder) for d in order if d not in big)
+    pd.concat([pd.read_csv(f"{OUT}/{folder}/{d}.csv") for d in DATASETS]).to_csv(
+        f"{OUT}/{name}.csv", index=False)
+    np.savez(f"{OUT}/{name}_examples.npz",
+             **{f"{d}/{k}": v for d in DATASETS for k, v in np.load(f"{OUT}/{folder}/{d}.npz").items()})
+
+
+if __name__ == "__main__":
+    warnings.filterwarnings("ignore")
+    run_all(int(sys.argv[1]) if len(sys.argv) > 1 else 1, run, "forecast")

@@ -8,6 +8,7 @@
                                   soft-DTW_omega (gamma = 1) vs DBA
   figures/prior_zero_cost.png     expected alignment E with zero costs: the
                                   data-independent prior of soft-DTW vs soft-DTW_omega
+  figures/nearest_centroid_full.png  (paper Fig. 7): soft-DTW vs DBA centroids on the 79 datasets
 Usage:  python -m experiments.make_figures
 """
 
@@ -18,6 +19,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+from tslearn.datasets import UCR_UEA_datasets
 
 from softdtw.barycenter import dba_barycenter, softdtw_barycenter, subgradient_barycenter
 from softdtw.clustering import dtw_kmeans
@@ -29,7 +32,6 @@ plt.rcParams.update({"font.size": 9})
 
 
 def load(name):
-    from tslearn.datasets import UCR_UEA_datasets
     X, y, Xt, yt = UCR_UEA_datasets(use_cache=True).load_dataset(name)
     return X.astype(np.float64), y
 
@@ -127,18 +129,19 @@ def prior_figure():
     plt.close()
 
 
-def nearest_centroid_slides_figure():
+def nearest_centroid_slides_figure(src="results/classification.csv",
+                                   out="figures/nearest_centroid_slides.png"):
     """Accuracy of soft-DTW vs DBA centroids, one point per dataset (paper Fig. 7)."""
-    import pandas as pd
-    cl = pd.read_csv("results/classification.csv")
+    cl = pd.read_csv(src)
     acc = cl[cl.method.isin(["DBA", "soft-DTW"])].groupby(["dataset", "method"]).acc.mean().unstack()
     fig, ax = plt.subplots(figsize=(3.4, 3.4))
-    ax.plot([0.4, 1], [0.4, 1], "k--", lw=0.8)
-    ax.scatter(acc["DBA"], acc["soft-DTW"], color="C0")
+    lo = min(0.4, np.floor(10 * acc.values.min()) / 10)
+    ax.plot([lo, 1], [lo, 1], "k--", lw=0.8)
+    ax.scatter(acc["DBA"], acc["soft-DTW"], color="C0", s=12 if len(acc) > 20 else None)
     ax.set_xlabel("DBA centroids: accuracy")
     ax.set_ylabel("soft-DTW centroids: accuracy")
     plt.tight_layout()
-    plt.savefig("figures/nearest_centroid_slides.png", dpi=200)
+    plt.savefig(out, dpi=200)
     plt.close()
 
 
@@ -169,12 +172,17 @@ def forecast_figure(examples=(("ShapesAll", 0), ("Coffee", 3), ("CBF", 1)),
     plt.close()
 
 
+def nearest_centroid_full_figure():
+    """Fig. 7 on the 79 datasets of the paper (results_full/)."""
+    nearest_centroid_slides_figure("results_full/classification.csv", "figures/nearest_centroid_full.png")
+
+
 def forecast_slides_figure():
     """Slides version, before soft-DTW_omega is introduced: Euclidean loss vs soft-DTW."""
     forecast_figure(curves=("Euclidean", "soft-DTW"), out="figures/forecast_examples_slides.png")
 
 
 if __name__ == "__main__":
-    for f in (barycenters_figure, barycenters_slides_figure, interpolation_figure, kmeans_figure, prior_figure, forecast_figure, forecast_slides_figure, nearest_centroid_slides_figure):
+    for f in (barycenters_figure, barycenters_slides_figure, interpolation_figure, kmeans_figure, prior_figure, forecast_figure, forecast_slides_figure, nearest_centroid_slides_figure, nearest_centroid_full_figure):
         f()
         print(f.__name__, "done", flush=True)
