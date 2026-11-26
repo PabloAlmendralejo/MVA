@@ -1,0 +1,17 @@
+compared_with,init,gamma,ours_pct,paper_pct
+DBA,random,1.0,41.8,41
+DBA,random,0.1,94.9,94
+DBA,random,0.01,100.0,100
+DBA,random,0.001,97.5,97
+DBA,euclidean,1.0,3.8,4
+DBA,euclidean,0.1,44.3,47
+DBA,euclidean,0.01,78.5,80
+DBA,euclidean,0.001,96.2,90
+subgradient,random,1.0,93.7,96
+subgradient,random,0.1,100.0,97
+subgradient,random,0.01,100.0,97
+subgradient,random,0.001,100.0,97
+subgradient,euclidean,1.0,26.6,35
+subgradient,euclidean,0.1,74.7,72
+subgradient,euclidean,0.01,92.4,92
+subgradient,euclidean,0.001,97.5,97

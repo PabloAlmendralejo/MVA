@@ -18,10 +18,12 @@ softdtw/              the implementation
   omega.py            barycenters and pairwise distances for soft-DTW_ω
   clustering.py       k-means and nearest-centroid classifier
 experiments/          one script per experiment (see below), data_diagnosis.py,
-                      make_figures.py, bench_gpu.py
+                      make_figures.py, bench_gpu.py; datasets.py (the paper's
+                      dataset lists), summarize_full.py
 tests/                test-suite: brute-force enumeration of alignments, finite
                       differences, tslearn, autograd
-results/              CSV results of the experiments
+results/              CSV results of the experiments (reduced runs, used by the report)
+results_full/         results on the paper's dataset lists, with a README
 figures/              figures of the report
 ```
 
@@ -37,12 +39,19 @@ Run them from the project root, e.g. `python -m experiments.exp_kmeans`. Each sc
 
 Also: `python -m experiments.data_diagnosis` (Data section) and `python -m experiments.make_figures` (qualitative figures).
 
+### Full-paper runs
+With `SOFTDTW_FULL=1` the scripts use the paper's dataset lists (`experiments/datasets.py`) and write to `results_full/`:
+```bash
+SOFTDTW_FULL=1 python -m experiments.exp_barycenters 20   # 20 = parallel jobs
+```
+k-means runs on the 41 cheapest of the paper's 57 datasets with `python -m experiments.exp_kmeans_subset 20` (all methods, soft-DTW_ω included). `python -m experiments.summarize_full` writes the tables of `results_full/summary/`; `results_full/README.md` describes the results and how they compare with the paper. The full runs take days on a laptop.
+
 ## Setup (Windows, Python ≥ 3.11)
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install numpy scipy numba torch matplotlib pandas joblib tslearn scikit-learn pytest ipykernel nbformat nbclient
 .venv/Scripts/python -m ipykernel install --user --name softdtw --display-name "Python (softdtw)"
-.venv/Scripts/python -m pytest tests -q   # should print 67 passed
+.venv/Scripts/python -m pytest tests -q   # should print 83 passed
 ```
 UCR datasets are downloaded automatically by `tslearn` on first use. Do not run two experiments at the same time (each one already uses all cores).
 
