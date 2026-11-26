@@ -5,7 +5,7 @@ Re-implementation and analysis of Cuturi & Blondel, *Soft-DTW: a Differentiable 
 ## Contents
 ```
 notebook.ipynb        main notebook: method and verification, data diagnosis,
-                      all experiments (rebuilt from results/), extension
+                      all experiments (rebuilt from results_full/), extension
 report/               report (main.tex, main.pdf)
 softdtw/              the implementation
   core.py             forward (Algorithm 1) and backward (Algorithm 2) in Numba,
